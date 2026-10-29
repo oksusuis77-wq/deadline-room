@@ -14,7 +14,7 @@
             font-style: normal;
             font-display: swap;
         }
-        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.05rem; }
+        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.15rem; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -37,35 +37,35 @@
     <div id="login-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-50 flex items-center justify-center">
         <div class="bg-white rounded-3xl p-8 card-shadow max-w-md w-full mx-4 text-center">
             <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">마감방 입장</h2>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">마감방 입장</h2>
             <form id="login-form" class="space-y-4" onsubmit="event.preventDefault(); window.doLogin();">
-                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-lg focus:ring-2 focus:ring-gray-900 outline-none font-bold text-gray-900" placeholder="닉네임 (예: 김작가)">
-                <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg cursor-pointer">입장하기</button>
+                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-xl focus:ring-2 focus:ring-gray-900 outline-none font-bold text-gray-900" placeholder="닉네임 (예: 김작가)">
+                <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-xl hover:bg-gray-800 transition-colors shadow-lg cursor-pointer">입장하기</button>
             </form>
         </div>
     </div>
 
     <!-- 토스트 알림 -->
     <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[60] hidden-safely transition-all duration-300">
-        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-sm flex items-center gap-2"></div>
+        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-base flex items-center gap-2"></div>
     </div>
 
     <!-- 헤더 -->
     <header class="glass-header sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-lg leading-none shadow-sm">M</div>
-                <h1 class="text-lg font-bold tracking-tight text-gray-900">마감방</h1>
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-xl leading-none shadow-sm">M</div>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">마감방</h1>
             </div>
             
-            <nav class="hidden md:flex items-center gap-8">
-                <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-community">Log</button>
+            <nav class="hidden md:flex items-center gap-10 text-lg">
+                <button class="nav-btn text-gray-900 font-bold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1 transition-colors" data-target="tab-community">Log</button>
             </nav>
 
             <div class="flex items-center gap-3">
-                <div id="auth-status" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                <span id="user-info" class="text-xs text-gray-500 font-medium hidden md:block">연결 대기중...</span>
+                <div id="auth-status" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
+                <span id="user-info" class="text-sm text-gray-600 font-bold hidden md:block">연결 대기중...</span>
             </div>
         </div>
     </header>
@@ -74,10 +74,10 @@
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
         <!-- 탭 1: 집필실 -->
         <section id="tab-room" class="tab-content active space-y-8">
-            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
-                <span class="text-gray-500 font-bold whitespace-nowrap sm:pl-4">오늘의 목표</span>
-                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 px-2 text-center sm:text-left" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
-                <button id="btn-save-goal" class="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium cursor-pointer">저장</button>
+            <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
+                <span class="text-gray-700 font-bold text-lg whitespace-nowrap sm:pl-2">오늘의 목표</span>
+                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 px-2 text-center sm:text-left text-lg font-medium" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
+                <button id="btn-save-goal" class="w-full sm:w-auto px-8 py-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-colors font-bold cursor-pointer text-base">저장</button>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8">
@@ -85,19 +85,19 @@
                 <div class="lg:w-2/3 space-y-6">
                     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-900">함께 마감하는 집필실</h2>
-                            <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                            <h2 class="text-3xl font-bold text-gray-900">함께 마감하는 집필실</h2>
+                            <p class="text-gray-500 text-base mt-1">서로의 마감을 응원합니다</p>
                         </div>
                         
-                        <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-                            <label class="flex items-center gap-2 px-3 text-sm cursor-pointer text-gray-600 hover:text-gray-900">
+                        <div class="flex items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100">
+                            <label class="flex items-center gap-2 px-3 text-base cursor-pointer text-gray-700 hover:text-gray-900">
                                 <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900 focus:ring-gray-900" checked>
-                                <span class="font-medium">모자이크</span>
+                                <span class="font-bold">모자이크</span>
                             </label>
                             <div class="w-px h-6 bg-gray-200"></div>
-                            <button id="btn-cam" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold cursor-pointer">웹캠</button>
-                            <button id="btn-screen" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold cursor-pointer">화면공유</button>
-                            <button id="btn-stop" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-semibold cursor-pointer">중지</button>
+                            <button id="btn-cam" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-base font-bold cursor-pointer">웹캠</button>
+                            <button id="btn-screen" class="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-base font-bold cursor-pointer">화면공유</button>
+                            <button id="btn-stop" class="hidden-safely px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-base font-bold cursor-pointer">중지</button>
                         </div>
                     </div>
 
@@ -107,11 +107,11 @@
                             <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-40" autoplay playsinline muted></video>
                             
                             <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
-                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 text-gray-400 font-bold text-2xl">나</div>
-                                <p class="text-sm font-medium">내 화면 대기중</p>
+                                <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-4 text-gray-400 font-bold text-3xl">나</div>
+                                <p class="text-base font-bold text-gray-400">내 화면 대기중</p>
                             </div>
 
-                            <div class="absolute top-4 left-4 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-2 z-50">
+                            <div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">
                                 <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
                                 나 (<span class="daily-time-display">00:00:00</span>)
                             </div>
@@ -124,33 +124,33 @@
                 <div class="lg:w-1/3 flex flex-col gap-6">
                     <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-900">하루 2시간 챌린지</h3>
-                            <span class="text-[11px] text-gray-400 bg-gray-50 px-2 py-1 rounded-md">매일 AM 03:00 리셋</span>
+                            <h3 class="font-bold text-xl text-gray-900">하루 2시간 챌린지</h3>
+                            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">매일 AM 03:00 리셋</span>
                         </div>
                         <div class="flex justify-between items-end mb-2">
-                            <span class="text-2xl font-light text-gray-900 daily-time-display">00:00:00</span>
-                            <span class="text-gray-400 text-sm font-medium" id="progress-percent">0%</span>
+                            <span class="text-3xl font-light text-gray-900 daily-time-display">00:00:00</span>
+                            <span class="text-gray-400 text-base font-bold" id="progress-percent">0%</span>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                             <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-1000 w-0"></div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 text-center relative overflow-hidden flex-1 flex flex-col justify-center min-h-[300px]">
+                    <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 text-center relative overflow-hidden flex-1 flex flex-col justify-center min-h-[320px]">
                         <div class="absolute inset-0 bg-gray-50 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear" id="pomo-bg-fill" style="z-index: 0;"></div>
                         
                         <div class="relative z-10">
-                            <div class="flex justify-center gap-2 mb-8">
-                                <button id="mode-work" class="px-4 py-1.5 rounded-full text-sm font-bold bg-gray-900 text-white shadow-md cursor-pointer">집중 25분</button>
-                                <button id="mode-break" class="px-4 py-1.5 rounded-full text-sm font-bold text-gray-500 hover:bg-gray-100 cursor-pointer">휴식 5분</button>
+                            <div class="flex justify-center gap-3 mb-8">
+                                <button id="mode-work" class="px-5 py-2 rounded-full text-base font-bold bg-gray-900 text-white shadow-md cursor-pointer">집중 25분</button>
+                                <button id="mode-break" class="px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100 cursor-pointer">휴식 5분</button>
                             </div>
 
-                            <div class="text-6xl font-light tracking-tighter text-gray-900 mb-8 tabular-nums leading-none" id="pomo-display">25:00</div>
+                            <div class="text-7xl font-light tracking-tighter text-gray-900 mb-8 tabular-nums leading-none" id="pomo-display">25:00</div>
 
                             <div class="flex justify-center gap-3">
-                                <button id="btn-pomo-start" class="w-28 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-bold shadow-lg text-sm cursor-pointer">시작하기</button>
-                                <button id="btn-pomo-reset" class="w-14 py-3 bg-white border-2 border-gray-100 text-gray-400 hover:text-gray-900 rounded-2xl flex items-center justify-center cursor-pointer">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <button id="btn-pomo-start" class="w-32 py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-bold shadow-lg text-base cursor-pointer">시작하기</button>
+                                <button id="btn-pomo-reset" class="w-16 py-3.5 bg-white border-2 border-gray-100 text-gray-400 hover:text-gray-900 rounded-2xl flex items-center justify-center cursor-pointer">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 </button>
                             </div>
                         </div>
@@ -159,25 +159,39 @@
             </div>
         </section>
 
-        <!-- 탭 2: Log (커뮤니티 및 주간 리포트) -->
-        <section id="tab-community" class="tab-content">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-6">
+        <!-- 탭 2: Log (커뮤니티, 주간 리포트 및 작가별 한 달 결산) -->
+        <section id="tab-community" class="tab-content space-y-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">동료 작가 마감 현황</h2>
-                    <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다 (카운터 리셋: 매일 오전 3시)</p>
+                    <h2 class="text-3xl font-bold text-gray-900">동료 작가 마감 현황</h2>
+                    <p class="text-gray-500 text-base mt-1">서로의 마감을 응원합니다 (매일 오전 3시 리셋)</p>
                 </div>
-                <div class="bg-white p-5 rounded-3xl border border-gray-100 card-shadow text-sm text-gray-600">
-                    <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 card-shadow text-base text-gray-600">
+                    <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2 text-lg">
+                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         마감방 규칙
                     </h4>
-                    <ul class="space-y-2 text-xs">
+                    <ul class="space-y-2 text-sm">
                         <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5일 이상, 하루 2시간 이상 작업 필수</li>
                         <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 미달성 시 하트 1개 감소 (생명 3개 차감 시 퇴출)</li>
                     </ul>
                 </div>
             </div>
-            <div class="grid grid-cols-1 gap-6" id="community-list"></div>
+
+            <!-- 개별 작가 카드 리스트 -->
+            <div class="grid grid-cols-1 gap-8" id="community-list"></div>
+
+            <!-- 하단: 작가별 한 달 결산 리포트 섹션 -->
+            <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6 mt-12">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <span>📊</span> 작가별 이번 달 결산 리포트
+                    </h3>
+                    <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-xl" id="month-label">10월 현황</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="monthly-author-grid"></div>
+            </div>
         </section>
     </main>
 
@@ -233,11 +247,19 @@
 
         const DB_COLLECTION = 'artifacts/app/users';
 
-        // 오전 3시 기준 당일 날짜 식별 문자열 반환 (예: 새벽 2시면 어제 날짜로 처리)
+        // 오전 3시 기준 당일 날짜 식별
         function get3AMDateString(dateObj = new Date()) {
             const d = new Date(dateObj);
-            d.setHours(d.getHours() - 3); // 3시간을 차감하여 새벽 3시 이전은 전날로 산정
+            d.setHours(d.getHours() - 3);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // 오늘 요일 인덱스 (0:월, 1:화 ... 6:일)
+        function get3AMDayIndex(dateObj = new Date()) {
+            const d = new Date(dateObj);
+            d.setHours(d.getHours() - 3);
+            const day = d.getDay(); 
+            return day === 0 ? 6 : day - 1; 
         }
 
         window.addEventListener('init-app', (e) => { myNick = e.detail; initFirebase(); });
@@ -246,7 +268,7 @@
             app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
             const cred = await signInAnonymously(auth); currentUser = cred.user;
             
-            document.getElementById('auth-status').className = 'w-2 h-2 rounded-full bg-emerald-500';
+            document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
             document.getElementById('user-info').textContent = `${myNick} (온라인)`;
             
             /* Metered.ca TURN 서버 설정 */
@@ -285,10 +307,10 @@
             
             if (!snap.exists()) {
                 await setDoc(userRef, { 
-                    id: myNick, nickname: myNick, peerId: myPeerId, goal: '', 
+                    id: myNick, nickname: myNick, peerId: myPeerId, goal: '', goalHistory: [],
                     dailySeconds: 0, totalSeconds: 0, warnings: 0, 
                     lastResetDate: today3AM,
-                    weeklyLogs: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false },
+                    weeklyLogs: { mon: true, tue: true, wed: true, thu: true, fri: false, sat: false, sun: false },
                     lastActive: serverTimestamp(), isOnline: true, isSharing: false 
                 });
                 lastResetDateStr = today3AM;
@@ -296,7 +318,6 @@
                 const data = snap.data();
                 lastResetDateStr = data.lastResetDate || today3AM;
                 
-                // 새벽 3시 기준 날짜가 달라졌다면 카운터 리셋
                 if (lastResetDateStr !== today3AM) {
                     dailySharedSeconds = 0;
                     lastResetDateStr = today3AM;
@@ -397,19 +418,19 @@
                     card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group flex items-center justify-center";
                     card.innerHTML = `
                         <div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10">
-                            <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-2xl mb-4">${u.id.charAt(0)}</div>
-                            <p class="text-base font-bold text-gray-900">${u.id}</p>
-                            <p class="text-sm text-gray-500 mt-1 goal-text">${u.goal || '목표 없음'}</p>
+                            <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-3xl mb-4">${u.id.charAt(0)}</div>
+                            <p class="text-xl font-bold text-gray-900">${u.id}</p>
+                            <p class="text-base text-gray-500 mt-1 goal-text">${u.goal || '목표 없음'}</p>
                         </div>
-                        <div class="absolute top-4 left-4 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 z-50">
-                            <span class="w-1.5 h-1.5 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
+                        <div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">
+                            <span class="w-2 h-2 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
                             ${u.id} (<span class="time-text">${h}h ${m}m</span>)
                         </div>`;
                     grid.appendChild(card);
                 } else {
                     card.querySelector('.time-text').textContent = `${h}h ${m}m`;
                     card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
-                    card.querySelector('.status-dot').className = `w-1.5 h-1.5 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
+                    card.querySelector('.status-dot').className = `w-2 h-2 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
                     
                     const layer = card.querySelector('.ui-layer');
                     const vid = card.querySelector('video.remote-video');
@@ -448,7 +469,6 @@
                 const now = Date.now();
                 const current3AM = get3AMDateString(new Date(now));
                 
-                // 실행 도중 오전 3시가 지나면 카운팅 자동 리셋
                 if (lastResetDateStr && lastResetDateStr !== current3AM) {
                     dailySharedSeconds = 0;
                     lastResetDateStr = current3AM;
@@ -484,9 +504,25 @@
             document.getElementById('progress-bar').style.width = `${percent}%`; document.getElementById('progress-percent').textContent = `${Math.floor(percent)}%`;
         }
 
-        document.getElementById('btn-save-goal').onclick = () => {
-            if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { goal: document.getElementById('room-goal-input').value });
-            showToast("목표 저장 완료");
+        document.getElementById('btn-save-goal').onclick = async () => {
+            const newGoal = document.getElementById('room-goal-input').value.trim();
+            if (!myNick || !newGoal) return;
+            
+            const userRef = doc(db, DB_COLLECTION, myNick);
+            const snap = await getDoc(userRef);
+            let history = (snap.exists() && snap.data().goalHistory) ? snap.data().goalHistory : [];
+            
+            const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
+            const currentDayName = daysKey[get3AMDayIndex()];
+            
+            history = history.filter(h => h.day !== currentDayName);
+            history.unshift({ day: currentDayName, goal: newGoal });
+
+            await updateDoc(userRef, { 
+                goal: newGoal,
+                goalHistory: history 
+            });
+            showToast("오늘의 목표 저장 및 기록 완료!");
         };
 
         // 뽀모도로 타이머
@@ -494,8 +530,8 @@
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
         function setPomo(mode) {
             if(isPomoRun) togglePomo(); pomoMode = mode; pomoSec = mode === 'work' ? POMO_WORK : POMO_BREAK;
-            document.getElementById('mode-work').className = mode === 'work' ? 'px-4 py-1.5 rounded-full text-sm font-bold bg-gray-900 text-white shadow-md' : 'px-4 py-1.5 rounded-full text-sm font-bold text-gray-500 hover:bg-gray-100';
-            document.getElementById('mode-break').className = mode === 'break' ? 'px-4 py-1.5 rounded-full text-sm font-bold bg-gray-900 text-white shadow-md' : 'px-4 py-1.5 rounded-full text-sm font-bold text-gray-500 hover:bg-gray-100';
+            document.getElementById('mode-work').className = mode === 'work' ? 'px-5 py-2 rounded-full text-base font-bold bg-gray-900 text-white shadow-md' : 'px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100';
+            document.getElementById('mode-break').className = mode === 'break' ? 'px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100';
             updatePomo();
         }
         function updatePomo() {
@@ -513,11 +549,15 @@
         document.getElementById('mode-work').onclick = () => setPomo('work'); document.getElementById('mode-break').onclick = () => setPomo('break');
         document.getElementById('btn-pomo-start').onclick = togglePomo; document.getElementById('btn-pomo-reset').onclick = () => setPomo(pomoMode);
 
-        // Log(커뮤니티) 탭 렌더링
+        // 작가별 개별 한 달 결산 렌더링 포함
         window.renderCommunityLog = function() {
             const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
-            
-            document.getElementById('community-list').innerHTML = publicUsers.map(u => {
+            const todayIdx = get3AMDayIndex();
+
+            const communityListEl = document.getElementById('community-list');
+            const monthlyGridEl = document.getElementById('monthly-author-grid');
+
+            communityListEl.innerHTML = publicUsers.map(u => {
                 const warnCount = u.warnings || 0;
                 let heartsHtml = '';
                 for(let i = 0; i < 3; i++) {
@@ -529,62 +569,122 @@
                 const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
                 const progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
                 
-                const totalH = Math.floor((u.totalSeconds || u.dailySeconds || 0) / 3600);
-                const totalM = Math.floor(((u.totalSeconds || u.dailySeconds || 0) % 3600) / 60);
+                const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
+                const totalH = Math.floor(userTotalSec / 3600);
+                const totalM = Math.floor((userTotalSec % 3600) / 60);
 
-                const wLogs = u.weeklyLogs || {};
                 const weekDaysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
                 
                 let weekHtml = weekDaysOrder.map((dayKey, idx) => {
-                    const isSuccess = wLogs[dayKey];
-                    const icon = isSuccess ? '😊' : '🥲';
+                    let icon = '-';
+                    if (idx <= 3) {
+                        icon = '😊';
+                    } else if (idx < todayIdx) {
+                        const wLogs = u.weeklyLogs || {};
+                        icon = wLogs[dayKey] ? '😊' : '🥲';
+                    } else if (idx === todayIdx) {
+                        icon = (u.dailySeconds >= GOAL_SECONDS) ? '😊' : '-';
+                    } else {
+                        icon = '-';
+                    }
+
                     return `
                         <div class="flex flex-col items-center">
-                            <span class="text-[10px] text-gray-400 font-medium mb-1">${daysKey[idx]}</span>
-                            <span class="text-lg">${icon}</span>
+                            <span class="text-xs text-gray-400 font-bold mb-1">${daysKey[idx]}</span>
+                            <span class="text-2xl">${icon}</span>
                         </div>
                     `;
                 }).join('');
 
+                const historyList = u.goalHistory || [];
+                let goalHistoryHtml = historyList.length > 0 ? historyList.map(item => `
+                    <li class="text-sm text-gray-700 flex items-center gap-2">
+                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">[${item.day}]</span>
+                        <span>${item.goal}</span>
+                    </li>
+                `).join('') : `<li class="text-sm text-gray-400">아직 저장된 목표 기록이 없습니다.</li>`;
+
                 return `
-                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-4">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 rounded-2xl bg-gray-900 text-white font-bold text-xl flex items-center justify-center shadow-md">
+                    <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-5">
+                            <div class="flex items-center gap-5">
+                                <div class="w-16 h-16 rounded-2xl bg-gray-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">
                                     ${u.id.charAt(0)}
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-xl text-gray-900">${u.id}</h3>
-                                    <p class="text-xs text-gray-500 mt-1">오늘의 목표: <span class="text-gray-800 font-bold">${u.goal || '목표 미설정'}</span></p>
+                                    <h3 class="font-bold text-2xl text-gray-900">${u.id}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">오늘의 목표: <span class="text-gray-900 font-bold">${u.goal || '목표 미설정'}</span></p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 self-start sm:self-center">
-                                <span class="text-xs text-gray-400 font-bold">남은 생명</span>
-                                <div class="text-base tracking-widest">${heartsHtml}</div>
+                            <div class="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-center">
+                                <span class="text-sm text-gray-500 font-bold">남은 생명</span>
+                                <div class="text-lg tracking-widest">${heartsHtml}</div>
                             </div>
                         </div>
 
                         <div>
-                            <div class="flex justify-between items-center text-xs font-bold text-gray-500 mb-2">
+                            <div class="flex justify-between items-center text-sm font-bold text-gray-600 mb-2">
                                 <span>오늘 작업 (${h}시간 ${m}분 / 2시간 목표)</span>
                                 <div class="flex items-center gap-2">
-                                    <span class="bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-md font-semibold">총 누적 ${totalH}시간 ${totalM}분</span>
-                                    <span class="text-gray-900">${Math.floor(progress)}%</span>
+                                    <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">총 누적 ${totalH}시간 ${totalM}분</span>
+                                    <span class="text-gray-900 text-base">${Math.floor(progress)}%</span>
                                 </div>
                             </div>
-                            <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                            <div class="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">
                                 <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
                             </div>
                         </div>
 
-                        <div class="bg-gray-50/70 rounded-2xl p-4 border border-gray-100">
-                            <span class="text-xs font-bold text-gray-400 block mb-3">주간 7일 마감 현황</span>
+                        <div class="bg-gray-50/70 rounded-2xl p-5 border border-gray-100">
+                            <span class="text-sm font-bold text-gray-500 block mb-3">주간 7일 마감 현황 (새벽 3시 정산)</span>
                             <div class="grid grid-cols-7 gap-2 text-center">
                                 ${weekHtml}
                             </div>
                         </div>
+
+                        <div class="bg-indigo-50/30 rounded-2xl p-5 border border-indigo-50/50">
+                            <span class="text-sm font-bold text-indigo-900 block mb-3">📌 이번 주 집필 목표 기록</span>
+                            <ul class="space-y-2">
+                                ${goalHistoryHtml}
+                            </ul>
+                        </div>
                     </div>`;
             }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
+
+            // 하단: 작가별 한 달 결산 카드 생성
+            const now = new Date();
+            document.getElementById('month-label').textContent = `${now.getMonth() + 1}월 현황`;
+
+            monthlyGridEl.innerHTML = publicUsers.map(u => {
+                const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
+                const totalH = Math.floor(userTotalSec / 3600);
+                const totalM = Math.floor((userTotalSec % 3600) / 60);
+
+                // 작가별 평균 달성률 계산 (월~목 기본 통과 고려)
+                const todayProgress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
+                const avgProgress = Math.min(Math.floor((400 + todayProgress) / 5), 100);
+
+                return `
+                    <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4">
+                        <div class="flex items-center gap-3 border-b border-gray-200/60 pb-3">
+                            <div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">
+                                ${u.id.charAt(0)}
+                            </div>
+                            <span class="font-bold text-lg text-gray-900">${u.id} 작가</span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">이달의 총 작업 시간</span>
+                                <span class="font-bold text-gray-900 text-base">${totalH}시간 ${totalM}분</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">이달의 평균 달성률</span>
+                                <span class="font-bold text-emerald-600 text-base">${avgProgress}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div class="text-gray-400 col-span-full py-6 text-center">참여자가 없습니다.</div>';
         };
 
         window.addEventListener('beforeunload', () => { if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); });

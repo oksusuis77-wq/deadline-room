@@ -19,13 +19,14 @@
 </head>
 <body class="min-h-screen flex flex-col overflow-hidden">
 
-    <!-- 로그인 오버레이 (새로고침 완벽 차단 적용) -->
+    <!-- 로그인 오버레이 (새로고침 100% 차단) -->
     <div id="login-overlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center">
         <div class="bg-white rounded-3xl p-8 card-shadow max-w-sm w-full mx-4 text-center border border-gray-100">
             <h2 class="text-2xl font-bold mb-6 text-gray-900">마감방 입장</h2>
-            <form id="login-form">
-                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-center text-lg focus:ring-2 focus:ring-gray-900 outline-none transition-all" placeholder="닉네임 입력">
-                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-bold text-lg transition-colors">입장하기</button>
+            <!-- form 태그의 기본 동작을 원천 차단하고 JS 함수만 호출 -->
+            <form onsubmit="event.preventDefault(); window.submitLogin();">
+                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-center text-lg outline-none" placeholder="닉네임 입력">
+                <button type="submit" class="w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-lg">입장하기</button>
             </form>
         </div>
     </div>
@@ -33,7 +34,7 @@
     <!-- 헤더 -->
     <header class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 p-4 shadow-sm">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="font-bold text-xl text-gray-900">마감방 <span class="text-sm font-normal text-gray-500 ml-2">서로의 마감을 응원합니다</span></h1>
+            <h1 class="font-bold text-xl text-gray-900">마감방</h1>
             <div class="flex items-center gap-2">
                 <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></div>
                 <span id="user-info" class="text-sm font-bold text-gray-600">대기중...</span>
@@ -45,41 +46,38 @@
         
         <!-- 왼쪽: 화면 공유 영역 -->
         <div class="lg:w-2/3 flex flex-col gap-4">
-            <!-- 상단 컨트롤러 -->
             <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 card-shadow">
-                <label class="flex items-center gap-2 cursor-pointer font-bold text-gray-700 hover:text-gray-900 transition-colors">
-                    <input type="checkbox" id="blur-toggle" checked class="w-4 h-4 rounded text-gray-900 focus:ring-gray-900"> 모자이크
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-gray-700">
+                    <input type="checkbox" id="blur-toggle" checked class="w-4 h-4 rounded text-gray-900"> 모자이크
                 </label>
                 <div class="flex gap-2">
-                    <button id="btn-cam" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-xl font-bold text-sm transition-colors">웹캠 켜기</button>
-                    <button id="btn-screen" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors">화면 공유</button>
-                    <button id="btn-stop" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-xl font-bold text-sm transition-colors hidden-safely">공유 중지</button>
+                    <button id="btn-cam" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-xl font-bold text-sm">웹캠 켜기</button>
+                    <button id="btn-screen" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-sm">화면 공유</button>
+                    <button id="btn-stop" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-xl font-bold text-sm hidden-safely">공유 중지</button>
                 </div>
             </div>
 
             <!-- 비디오 그리드 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="video-grid">
                 <!-- 내 화면 -->
-                <div class="bg-white rounded-3xl overflow-hidden aspect-[4/3] relative border border-gray-100 card-shadow group flex items-center justify-center">
+                <div class="bg-white rounded-3xl overflow-hidden aspect-[4/3] relative border border-gray-100 card-shadow flex items-center justify-center">
                     <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-10" autoplay playsinline muted></video>
-                    
                     <div id="video-placeholder" class="z-0 flex flex-col items-center">
                         <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold text-xl mb-2">나</div>
                         <span class="text-sm font-bold text-gray-400">내 화면 대기중</span>
                     </div>
-                    
-                    <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold z-20 flex items-center gap-2">
+                    <div class="absolute top-3 left-3 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs font-bold z-20 flex items-center gap-2">
                         <span id="live-dot" class="w-1.5 h-1.5 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
                         나 (<span class="daily-time-display">00:00:00</span>)
                     </div>
                 </div>
                 
-                <!-- 다른 사람 화면 (스크립트가 여기에 자동 렌더링) -->
+                <!-- 다른 사람 화면 렌더링 영역 -->
                 <div id="other-users-grid" class="contents"></div>
             </div>
         </div>
 
-        <!-- 오른쪽: 챌린지 및 타이머 영역 -->
+        <!-- 오른쪽: 타이머 영역 -->
         <div class="lg:w-1/3 flex flex-col gap-4">
             <div class="bg-white rounded-3xl p-6 border border-gray-100 card-shadow">
                 <h3 class="font-bold text-gray-900 mb-4">하루 2시간 챌린지</h3>
@@ -94,18 +92,23 @@
         </div>
     </main>
 
-    <!-- 스크립트: UI 동작 및 Firebase/PeerJS 연동 -->
+    <!-- 모듈 로딩 지연과 상관없이 작동하는 폼 제어 스크립트 -->
+    <script>
+        window.submitLogin = function() {
+            const nick = document.getElementById('nickname-input').value.trim();
+            if (!nick) return;
+            document.getElementById('login-overlay').style.setProperty('display', 'none', 'important');
+            document.body.classList.remove('overflow-hidden');
+            // 커스텀 이벤트를 쏴서 뒤늦게 로딩된 Firebase 모듈을 깨움
+            window.dispatchEvent(new CustomEvent('init-app', { detail: nick }));
+        }
+    </script>
+
+    <!-- 파이어베이스 & PeerJS 모듈 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, updateDoc, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // 1. 로그인 폼 새로고침 완벽 차단 (이벤트 리스너 방식)
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault(); // 폼 전송에 의한 새로고침 차단
-            const nick = document.getElementById('nickname-input').value.trim();
-            if(nick) startApp(nick);
-        });
 
         const firebaseConfig = {
           apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4",
@@ -118,52 +121,45 @@
         const db = getFirestore(app);
         
         let peer = null;
-        let isPeerReady = false;
+        let myPeerId = null; // 자동 생성된 통신 ID
         let currentCalls = {};
         let publicUsers = [];
         let mediaStream = null;
+        let myNick = localStorage.getItem('deadline_nickname');
         
         let dailySharedSeconds = 0;
-        const GOAL_SECONDS = 2 * 60 * 60; // 2시간
+        const GOAL_SECONDS = 2 * 60 * 60;
         let sharingInterval = null;
-        let lastTick = null; // 탭 이동시 절대시간 측정용
+        let lastTick = null;
 
-        // 로컬 스토리지에 닉네임이 있으면 자동 시작
-        const savedNick = localStorage.getItem('deadline_nickname');
-        if(savedNick) {
-            document.getElementById('nickname-input').value = savedNick;
-            startApp(savedNick);
-        }
+        // 로그인 이벤트 수신
+        window.addEventListener('init-app', (e) => {
+            myNick = e.detail;
+            localStorage.setItem('deadline_nickname', myNick);
+            startFirebase();
+        });
 
-        async function startApp(nick) {
-            localStorage.setItem('deadline_nickname', nick);
+        // 이미 로컬스토리지에 닉네임이 있으면 자동 실행
+        if(myNick) {
+            document.getElementById('nickname-input').value = myNick;
             document.getElementById('login-overlay').style.setProperty('display', 'none', 'important');
             document.body.classList.remove('overflow-hidden');
-            
-            try {
-                await signInAnonymously(auth);
-                document.getElementById('user-info').textContent = `${nick}`;
-                document.getElementById('status-dot').classList.replace('bg-yellow-400', 'bg-emerald-500');
-                
-                initDB(nick);
-                initWebRTC(nick);
-            } catch(e) {
-                console.error("로그인 에러:", e);
-                alert("서버 연결에 실패했습니다. 다시 시도해주세요.");
-            }
+            startFirebase();
         }
 
-        function initWebRTC(nick) {
-            const safeId = 'peer_' + encodeURIComponent(nick).replace(/%/g, '_');
-            peer = new Peer(safeId, {
-                config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-            });
+        async function startFirebase() {
+            await signInAnonymously(auth);
+            document.getElementById('user-info').textContent = `${myNick}`;
+            document.getElementById('status-dot').classList.replace('bg-yellow-400', 'bg-emerald-500');
             
-            peer.on('open', () => {
-                isPeerReady = true;
-                checkAndCallOthers();
-            });
+            // 1. PeerJS 서버에 먼저 붙어서 완벽한 영어 난수 ID를 발급받음
+            peer = new Peer({ config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
             
+            peer.on('open', (id) => {
+                myPeerId = id; // 한글 깨짐 없는 완벽한 ID
+                initDB();      // ID 발급 성공 후 DB에 내 상태 기록
+            });
+
             peer.on('call', (call) => {
                 call.answer(mediaStream || undefined);
                 currentCalls[call.peer] = call;
@@ -171,9 +167,10 @@
             });
         }
 
-        function initDB(nick) {
-            const userRef = doc(db, 'artifacts', 'app', 'users', nick);
-            setDoc(userRef, { id: nick, isOnline: true, isSharing: false, lastActive: serverTimestamp() }, {merge: true});
+        function initDB() {
+            const userRef = doc(db, 'artifacts', 'app', 'users', myNick);
+            // 내 진짜 닉네임과 통신용 PeerID를 묶어서 저장
+            setDoc(userRef, { id: myNick, peerId: myPeerId, isOnline: true, isSharing: false, lastActive: serverTimestamp() }, {merge: true});
             
             getDoc(userRef).then(snap => {
                 if(snap.exists() && snap.data().dailySeconds) dailySharedSeconds = snap.data().dailySeconds;
@@ -189,17 +186,15 @@
         }
 
         function checkAndCallOthers() {
-            if(!isPeerReady || !peer) return;
-            const myNick = localStorage.getItem('deadline_nickname');
+            if(!myPeerId || !peer) return;
             
-            publicUsers.filter(u => u.id !== myNick && u.isOnline).forEach(u => {
-                const pId = 'peer_' + encodeURIComponent(u.id).replace(/%/g, '_');
-                // 상대가 화면을 켰거나 내가 화면을 켰을 때 연결 시도
-                if((u.isSharing || mediaStream) && !currentCalls[pId]) {
-                    const call = mediaStream ? peer.call(pId, mediaStream) : peer.call(pId);
+            publicUsers.filter(u => u.id !== myNick && u.isOnline && u.peerId).forEach(u => {
+                // 내가 화면을 켰거나, 상대가 켰다면
+                if((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
+                    const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
                     if(call) {
-                        currentCalls[pId] = call;
-                        call.on('stream', (stream) => renderRemoteVideo(pId, stream));
+                        currentCalls[u.peerId] = call;
+                        call.on('stream', (stream) => renderRemoteVideo(u.peerId, stream));
                     }
                 }
             });
@@ -225,9 +220,7 @@
                 checkAndCallOthers();
                 
                 mediaStream.getVideoTracks()[0].onended = stopStream;
-            } catch(e) { 
-                console.warn(e);
-            }
+            } catch(e) { console.warn(e); }
         }
 
         function stopStream() {
@@ -249,8 +242,7 @@
         }
 
         function updateDBSharing(isSharing) {
-            const nick = localStorage.getItem('deadline_nickname');
-            if(nick) updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { isSharing });
+            if(myNick) updateDoc(doc(db, 'artifacts', 'app', 'users', myNick), { isSharing });
         }
 
         document.getElementById('btn-cam').addEventListener('click', () => startStream('cam'));
@@ -263,75 +255,70 @@
             document.querySelectorAll('.remote-video').forEach(v => v.classList.toggle('video-blur', isBlur));
         });
 
-        // 상대방 카드 렌더링 (UI 껍데기 생성)
+        // 껍데기 UI 그리기 (ID 매칭 방식을 닉네임 기반으로 일원화)
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const myNick = localStorage.getItem('deadline_nickname');
             const others = publicUsers.filter(u => u.id !== myNick && u.isOnline);
             
             others.forEach(u => {
-                let card = document.getElementById(`user-${u.id}`);
+                let card = document.getElementById(`card-${u.id}`);
                 const h = String(Math.floor((u.dailySeconds || 0) / 3600)).padStart(2, '0');
                 const m = String(Math.floor(((u.dailySeconds || 0) % 3600) / 60)).padStart(2, '0');
                 
                 if(!card) {
                     card = document.createElement('div');
-                    card.id = `user-${u.id}`;
-                    card.className = "bg-white rounded-3xl overflow-hidden aspect-[4/3] relative border border-gray-100 card-shadow flex items-center justify-center";
-                    // 기본 UI (영상 없을 때 표시됨)
+                    card.id = `card-${u.id}`;
+                    card.className = "bg-white rounded-3xl overflow-hidden aspect-[4/3] relative border border-gray-100 card-shadow flex items-center justify-center group";
                     card.innerHTML = `
                         <div class="ui-layer z-0 flex flex-col items-center">
                             <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold text-xl mb-2">${u.id.charAt(0)}</div>
                             <span class="text-sm font-bold text-gray-900">${u.id}</span>
                         </div>
-                        <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold z-20 flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
+                        <div class="absolute top-3 left-3 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs font-bold z-20 flex items-center gap-2">
+                            <span class="dot-indicator w-1.5 h-1.5 rounded-full ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
                             ${u.id} (<span class="remote-time">${h}:${m}</span>)
                         </div>
                     `;
                     grid.appendChild(card);
                 } else {
                     card.querySelector('.remote-time').textContent = `${h}:${m}`;
-                    const dot = card.querySelector('.rounded-full.w-1\\.5');
-                    if(dot) {
-                        dot.className = `w-1.5 h-1.5 rounded-full ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
-                    }
+                    const dot = card.querySelector('.dot-indicator');
+                    if(dot) dot.className = `dot-indicator w-1.5 h-1.5 rounded-full ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
                 }
             });
             
-            // 나간 유저 카드 삭제
             Array.from(grid.children).forEach(c => {
-                if(!others.find(u => `user-${u.id}` === c.id)) c.remove();
+                if(!others.find(u => `card-${u.id}` === c.id)) c.remove();
             });
         }
 
-        // 상대방 영상 도착 시 무조건 최상단(z-10)으로 덮어씌움
-        function renderRemoteVideo(peerId, stream) {
+        // 비디오 도착 시 최상단(z-50)에 무조건 강제 부착
+        function renderRemoteVideo(incomingPeerId, stream) {
             if(!stream || stream.getVideoTracks().length === 0) return;
-            const targetUser = publicUsers.find(u => 'peer_' + encodeURIComponent(u.id).replace(/%/g, '_') === peerId);
+            
+            // 난수 PeerID를 가진 유저가 누군지 DB 목록에서 찾음
+            const targetUser = publicUsers.find(u => u.peerId === incomingPeerId);
             if(!targetUser) return;
             
-            const userCard = document.getElementById(`user-${targetUser.id}`);
+            const userCard = document.getElementById(`card-${targetUser.id}`);
             if(!userCard) return;
             
             const uiLayer = userCard.querySelector('.ui-layer');
-            if(uiLayer) uiLayer.style.display = 'none'; // 기본 회색 아이콘 숨김
+            if(uiLayer) uiLayer.style.display = 'none';
 
             let vid = userCard.querySelector('video.remote-video');
             if(!vid) {
                 vid = document.createElement('video');
                 const isBlur = document.getElementById('blur-toggle').checked;
-                // absolute와 z-10으로 카드를 꽉 채우고 최상단 배치
-                vid.className = `remote-video absolute inset-0 w-full h-full object-cover z-10 transition-all ${isBlur ? 'video-blur' : ''}`;
+                vid.className = `remote-video absolute inset-0 w-full h-full object-cover z-50 transition-all ${isBlur ? 'video-blur' : ''}`;
                 vid.autoplay = true; 
                 vid.playsinline = true; 
-                vid.muted = true;
+                vid.muted = true; // 강제 음소거 (브라우저 정책상 필수)
                 userCard.appendChild(vid);
             }
             if(vid.srcObject !== stream) vid.srcObject = stream;
         }
 
-        // 탭 이동 시 절대시간 보정 타이머
         function startTimer() {
             if(sharingInterval) return;
             lastTick = Date.now();
@@ -343,10 +330,8 @@
                     lastTick += delta * 1000;
                     updateTimeUI();
                     
-                    // 10초마다 DB 저장
                     if(dailySharedSeconds % 10 === 0) {
-                        const nick = localStorage.getItem('deadline_nickname');
-                        if(nick) updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { dailySeconds: dailySharedSeconds });
+                        if(myNick) updateDoc(doc(db, 'artifacts', 'app', 'users', myNick), { dailySeconds: dailySharedSeconds });
                     }
                 }
             }, 1000);
@@ -363,20 +348,13 @@
             const s = String(dailySharedSeconds % 60).padStart(2, '0');
             
             document.querySelectorAll('.daily-time-display').forEach(el => el.textContent = `${h}:${m}:${s}`);
-            
             const percent = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
             document.getElementById('progress-bar').style.width = `${percent}%`;
             document.getElementById('progress-percent').textContent = `${Math.floor(percent)}%`;
         }
 
-        // 창 닫을 때 오프라인 처리
         window.addEventListener('beforeunload', () => {
-            const nick = localStorage.getItem('deadline_nickname');
-            if(nick) {
-                updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { 
-                    isOnline: false, isSharing: false, lastActive: serverTimestamp() 
-                });
-            }
+            if(myNick) updateDoc(doc(db, 'artifacts', 'app', 'users', myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() });
         });
     </script>
 </body>

@@ -123,7 +123,10 @@
                 <!-- 타이머 영역 -->
                 <div class="lg:w-1/3 flex flex-col gap-6">
                     <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
-                        <h3 class="font-bold text-gray-900 mb-4">하루 2시간 챌린지</h3>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-900">하루 2시간 챌린지</h3>
+                            <span class="text-[11px] text-gray-400 bg-gray-50 px-2 py-1 rounded-md">매일 AM 03:00 리셋</span>
+                        </div>
                         <div class="flex justify-between items-end mb-2">
                             <span class="text-2xl font-light text-gray-900 daily-time-display">00:00:00</span>
                             <span class="text-gray-400 text-sm font-medium" id="progress-percent">0%</span>
@@ -156,12 +159,12 @@
             </div>
         </section>
 
-        <!-- 탭 2: Log (복구된 커뮤니티 현황) -->
+        <!-- 탭 2: Log (커뮤니티 및 주간 리포트) -->
         <section id="tab-community" class="tab-content">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-6">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">동료 작가 마감 현황</h2>
-                    <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                    <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다 (카운터 리셋: 매일 오전 3시)</p>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border border-gray-100 card-shadow text-sm text-gray-600">
                     <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -170,8 +173,7 @@
                     </h4>
                     <ul class="space-y-2 text-xs">
                         <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5일 이상, 하루 2시간 이상 작업 필수</li>
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주간 목표 미달성 시 경고 1회 누적 (🚨)</li>
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 누적 경고 3회 시 마감방 <strong class="text-red-500">퇴출</strong></li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 미달성 시 하트 1개 감소 (생명 3개 차감 시 퇴출)</li>
                     </ul>
                 </div>
             </div>
@@ -226,9 +228,17 @@
         const firebaseConfig = { apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", authDomain: "deadline-room-768bf.firebaseapp.com", projectId: "deadline-room-768bf" };
         let app, auth, db, currentUser = null, publicUsers = [];
         let peer = null, myPeerId = null, currentCalls = {}, mediaStream = null, myNick = '';
-        let dailySharedSeconds = 0, sharingInterval = null, lastTick = null; const GOAL_SECONDS = 2 * 60 * 60;
+        let dailySharedSeconds = 0, totalSharedSeconds = 0, sharingInterval = null, lastTick = null; const GOAL_SECONDS = 2 * 60 * 60;
+        let lastResetDateStr = '';
 
         const DB_COLLECTION = 'artifacts/app/users';
+
+        // 오전 3시 기준 당일 날짜 식별 문자열 반환 (예: 새벽 2시면 어제 날짜로 처리)
+        function get3AMDateString(dateObj = new Date()) {
+            const d = new Date(dateObj);
+            d.setHours(d.getHours() - 3); // 3시간을 차감하여 새벽 3시 이전은 전날로 산정
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
 
         window.addEventListener('init-app', (e) => { myNick = e.detail; initFirebase(); });
 
@@ -271,13 +281,37 @@
         async function initUserProfile() {
             const userRef = doc(db, DB_COLLECTION, myNick);
             const snap = await getDoc(userRef);
+            const today3AM = get3AMDateString();
             
             if (!snap.exists()) {
-                await setDoc(userRef, { id: myNick, nickname: myNick, peerId: myPeerId, goal: '', dailySeconds: 0, warnings: 0, lastActive: serverTimestamp(), isOnline: true, isSharing: false });
+                await setDoc(userRef, { 
+                    id: myNick, nickname: myNick, peerId: myPeerId, goal: '', 
+                    dailySeconds: 0, totalSeconds: 0, warnings: 0, 
+                    lastResetDate: today3AM,
+                    weeklyLogs: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false },
+                    lastActive: serverTimestamp(), isOnline: true, isSharing: false 
+                });
+                lastResetDateStr = today3AM;
             } else {
-                await updateDoc(userRef, { peerId: myPeerId, isOnline: true, lastActive: serverTimestamp() });
-                if (snap.data().goal) document.getElementById('room-goal-input').value = snap.data().goal;
-                dailySharedSeconds = snap.data().dailySeconds || 0;
+                const data = snap.data();
+                lastResetDateStr = data.lastResetDate || today3AM;
+                
+                // 새벽 3시 기준 날짜가 달라졌다면 카운터 리셋
+                if (lastResetDateStr !== today3AM) {
+                    dailySharedSeconds = 0;
+                    lastResetDateStr = today3AM;
+                    await updateDoc(userRef, { 
+                        peerId: myPeerId, isOnline: true, 
+                        dailySeconds: 0, lastResetDate: today3AM, 
+                        lastActive: serverTimestamp() 
+                    });
+                } else {
+                    dailySharedSeconds = data.dailySeconds || 0;
+                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, lastActive: serverTimestamp() });
+                }
+                
+                if (data.goal) document.getElementById('room-goal-input').value = data.goal;
+                totalSharedSeconds = data.totalSeconds || dailySharedSeconds;
             }
             updateProgressUI();
             
@@ -332,7 +366,6 @@
             } catch (err) { showToast("권한이 거부되었습니다."); }
         }
 
-        // 화공 중지 시 내 트랙만 끄고 상대방 연결은 정상 유지
         function stopStream() {
             if (mediaStream) {
                 mediaStream.getTracks().forEach(t => t.stop());
@@ -378,7 +411,6 @@
                     card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
                     card.querySelector('.status-dot').className = `w-1.5 h-1.5 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
                     
-                    // 상대방이 화공 중지 시 영상 요소 제거 및 프로필 UI 노출
                     const layer = card.querySelector('.ui-layer');
                     const vid = card.querySelector('video.remote-video');
                     if (!u.isSharing) {
@@ -413,10 +445,34 @@
             if (sharingInterval) return;
             lastTick = Date.now();
             sharingInterval = setInterval(() => {
-                const delta = Math.floor((Date.now() - lastTick) / 1000);
+                const now = Date.now();
+                const current3AM = get3AMDateString(new Date(now));
+                
+                // 실행 도중 오전 3시가 지나면 카운팅 자동 리셋
+                if (lastResetDateStr && lastResetDateStr !== current3AM) {
+                    dailySharedSeconds = 0;
+                    lastResetDateStr = current3AM;
+                    showToast("오전 3시 기준 당일 카운터가 리셋되었습니다.");
+                    if (myNick) {
+                        updateDoc(doc(db, DB_COLLECTION, myNick), { 
+                            dailySeconds: 0, 
+                            lastResetDate: current3AM 
+                        });
+                    }
+                }
+
+                const delta = Math.floor((now - lastTick) / 1000);
                 if (delta > 0) {
-                    dailySharedSeconds += delta; lastTick += delta * 1000; updateProgressUI();
-                    if (dailySharedSeconds % 10 === 0 && myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { dailySeconds: dailySharedSeconds });
+                    dailySharedSeconds += delta; 
+                    totalSharedSeconds += delta;
+                    lastTick += delta * 1000; 
+                    updateProgressUI();
+                    if (dailySharedSeconds % 10 === 0 && myNick) {
+                        updateDoc(doc(db, DB_COLLECTION, myNick), { 
+                            dailySeconds: dailySharedSeconds,
+                            totalSeconds: totalSharedSeconds 
+                        });
+                    }
                 }
             }, 1000);
         }
@@ -457,37 +513,78 @@
         document.getElementById('mode-work').onclick = () => setPomo('work'); document.getElementById('mode-break').onclick = () => setPomo('break');
         document.getElementById('btn-pomo-start').onclick = togglePomo; document.getElementById('btn-pomo-reset').onclick = () => setPomo(pomoMode);
 
-        // 복구된 Log 탭 렌더링 (규칙, 경고, 집필시간 카운팅 양식)
+        // Log(커뮤니티) 탭 렌더링
         window.renderCommunityLog = function() {
+            const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
+            
             document.getElementById('community-list').innerHTML = publicUsers.map(u => {
-                const isExpelled = (u.warnings || 0) >= 3;
-                const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
+                const warnCount = u.warnings || 0;
+                let heartsHtml = '';
+                for(let i = 0; i < 3; i++) {
+                    heartsHtml += (i < (3 - warnCount)) ? '❤️ ' : '💔 ';
+                }
+                if(warnCount >= 3) heartsHtml = '<span class="text-red-500 font-bold">퇴출 완료</span>';
+
+                const h = Math.floor((u.dailySeconds || 0) / 3600);
+                const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
                 const progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
-                const cardClass = isExpelled ? 'bg-gray-50 opacity-70 grayscale' : (u.id === myNick ? 'bg-indigo-50/30' : 'bg-white');
                 
+                const totalH = Math.floor((u.totalSeconds || u.dailySeconds || 0) / 3600);
+                const totalM = Math.floor(((u.totalSeconds || u.dailySeconds || 0) % 3600) / 60);
+
+                const wLogs = u.weeklyLogs || {};
+                const weekDaysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                
+                let weekHtml = weekDaysOrder.map((dayKey, idx) => {
+                    const isSuccess = wLogs[dayKey];
+                    const icon = isSuccess ? '😊' : '🥲';
+                    return `
+                        <div class="flex flex-col items-center">
+                            <span class="text-[10px] text-gray-400 font-medium mb-1">${daysKey[idx]}</span>
+                            <span class="text-lg">${icon}</span>
+                        </div>
+                    `;
+                }).join('');
+
                 return `
-                    <div class="rounded-3xl p-6 card-shadow border border-gray-100 ${cardClass} flex items-center justify-between gap-8 relative overflow-hidden">
-                        <div class="flex items-center gap-5">
-                            <div class="w-16 h-16 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center font-bold text-2xl">
-                                ${u.id.charAt(0)}
-                            </div>
-                            <div>
-                                <div class="font-bold text-xl mb-1">${u.id}</div>
-                                <div class="text-sm font-medium text-red-500 bg-white px-2.5 py-1 rounded-lg border border-gray-100 shadow-sm inline-block">
-                                    경고 ${u.warnings || 0}회
+                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-2xl bg-gray-900 text-white font-bold text-xl flex items-center justify-center shadow-md">
+                                    ${u.id.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-xl text-gray-900">${u.id}</h3>
+                                    <p class="text-xs text-gray-500 mt-1">오늘의 목표: <span class="text-gray-800 font-bold">${u.goal || '목표 미설정'}</span></p>
                                 </div>
                             </div>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
-                                <span>오늘 작업 (${h}시간 ${m}분)</span><span>${Math.floor(progress)}%</span>
+                            <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 self-start sm:self-center">
+                                <span class="text-xs text-gray-400 font-bold">남은 생명</span>
+                                <div class="text-base tracking-widest">${heartsHtml}</div>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center text-xs font-bold text-gray-500 mb-2">
+                                <span>오늘 작업 (${h}시간 ${m}분 / 2시간 목표)</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-md font-semibold">총 누적 ${totalH}시간 ${totalM}분</span>
+                                    <span class="text-gray-900">${Math.floor(progress)}%</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                                 <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
                             </div>
                         </div>
+
+                        <div class="bg-gray-50/70 rounded-2xl p-4 border border-gray-100">
+                            <span class="text-xs font-bold text-gray-400 block mb-3">주간 7일 마감 현황</span>
+                            <div class="grid grid-cols-7 gap-2 text-center">
+                                ${weekHtml}
+                            </div>
+                        </div>
                     </div>`;
-            }).join('') || '<div class="text-gray-400 py-10">참여자가 없습니다.</div>';
+            }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
         };
 
         window.addEventListener('beforeunload', () => { if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); });

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>마감방 - 웹소설 작가 작업실</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- WebRTC 화상 통신을 위한 PeerJS 라이브러리 추가 -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @font-face {
@@ -44,60 +43,3 @@
                 <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg shadow-gray-200">입장하기</button>
             </form>
         </div>
-    </div>
-
-    <!-- Toast Message -->
-    <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 hidden-safely transition-all duration-300">
-        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-sm flex items-center gap-2">
-            알림 메시지
-        </div>
-    </div>
-
-    <!-- Header & Navigation -->
-    <header class="glass-header sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-lg leading-none shadow-sm">M</div>
-                <h1 class="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
-                    마감방
-                    <button id="btn-logout" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-md transition-colors font-normal hidden md:block">닉네임 변경</button>
-                </h1>
-            </div>
-            
-            <!-- Desktop Nav -->
-            <nav class="hidden md:flex items-center gap-8">
-                <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-journal">개인 집필 일지</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-community">Log</button>
-            </nav>
-
-            <div class="flex items-center gap-3">
-                <div id="auth-status" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                <span id="user-info" class="text-xs text-gray-500 font-medium hidden md:block">연결 대기중...</span>
-            </div>
-        </div>
-        <!-- Mobile Nav -->
-        <nav class="md:hidden flex items-center gap-6 px-6 pb-3 overflow-x-auto">
-            <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 whitespace-nowrap" data-target="tab-room">집필실</button>
-            <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium whitespace-nowrap" data-target="tab-journal">개인 집필 일지</button>
-            <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium whitespace-nowrap" data-target="tab-community">Log</button>
-        </nav>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
-        
-        <!-- ==================== TAB 1: 집필실 ==================== -->
-        <section id="tab-room" class="tab-content active space-y-8">
-            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
-                <span class="text-gray-500 font-bold whitespace-nowrap sm:pl-4">오늘의 목표</span>
-                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 placeholder-gray-300 px-2 text-center sm:text-left" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
-                <button id="btn-save-goal" class="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-md font-medium">저장</button>
-            </div>
-
-            <div class="flex flex-col lg:flex-row gap-8">
-                <!-- Left: Videos -->
-                <div class="lg:w-2/3 space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">함께 마감하는 집필

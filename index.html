@@ -38,10 +38,10 @@
         <div class="bg-white rounded-3xl p-8 card-shadow max-w-md w-full mx-4 text-center">
             <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
             <h2 class="text-3xl font-bold text-gray-900 mb-2">마감방 입장</h2>
-            <form id="login-form" class="space-y-4" onsubmit="event.preventDefault(); window.doLogin();">
-                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-xl focus:ring-2 focus:ring-gray-900 outline-none font-bold text-gray-900" placeholder="닉네임 (예: 김작가)">
-                <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-xl hover:bg-gray-800 transition-colors shadow-lg cursor-pointer">입장하기</button>
-            </form>
+            <div class="space-y-4">
+                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-xl focus:ring-2 focus:ring-gray-900 outline-none font-bold text-gray-900" placeholder="닉네임 (예: 김작가)" onkeyup="if(event.key==='Enter') window.doLogin()">
+                <button type="button" onclick="window.doLogin()" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-xl hover:bg-gray-800 transition-colors shadow-lg cursor-pointer">입장하기</button>
+            </div>
         </div>
     </div>
 
@@ -95,9 +95,9 @@
                                 <span class="font-bold">모자이크</span>
                             </label>
                             <div class="w-px h-6 bg-gray-200"></div>
-                            <button id="btn-cam" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-base font-bold cursor-pointer">웹캠</button>
-                            <button id="btn-screen" class="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-base font-bold cursor-pointer">화면공유</button>
-                            <button id="btn-stop" class="hidden-safely px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-base font-bold cursor-pointer">중지</button>
+                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-base font-bold cursor-pointer">웹캠</button>
+                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-base font-bold cursor-pointer">화면공유</button>
+                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-base font-bold cursor-pointer">중지</button>
                         </div>
                     </div>
 
@@ -159,7 +159,7 @@
             </div>
         </section>
 
-        <!-- 탭 2: Log (커뮤니티, 주간 리포트 및 작가별 한 달 결산) -->
+        <!-- 탭 2: Log -->
         <section id="tab-community" class="tab-content space-y-8">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
@@ -247,14 +247,12 @@
 
         const DB_COLLECTION = 'artifacts/app/users';
 
-        // 오전 3시 기준 당일 날짜 식별
         function get3AMDateString(dateObj = new Date()) {
             const d = new Date(dateObj);
             d.setHours(d.getHours() - 3);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
-        // 오늘 요일 인덱스 (0:월, 1:화 ... 6:일)
         function get3AMDayIndex(dateObj = new Date()) {
             const d = new Date(dateObj);
             d.setHours(d.getHours() - 3);
@@ -271,7 +269,6 @@
             document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
             document.getElementById('user-info').textContent = `${myNick} (온라인)`;
             
-            /* Metered.ca TURN 서버 설정 */
             const customIceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 {
@@ -368,8 +365,8 @@
             document.querySelectorAll('.remote-video').forEach(v => e.target.checked ? v.classList.add('video-blur') : v.classList.remove('video-blur'));
         });
 
-        async function startStream(type) {
-            if (mediaStream) stopStream();
+        window.startStream = async function(type) {
+            if (mediaStream) window.stopStream();
             try {
                 mediaStream = await (type === 'cam' ? navigator.mediaDevices.getUserMedia({ video: true }) : navigator.mediaDevices.getDisplayMedia({ video: true }));
                 videoEl.srcObject = mediaStream;
@@ -377,7 +374,7 @@
                 document.getElementById('btn-cam').classList.add('hidden-safely'); document.getElementById('btn-screen').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely'); document.getElementById('live-indicator').classList.remove('hidden-safely');
                 
-                mediaStream.getVideoTracks()[0].onended = stopStream;
+                mediaStream.getVideoTracks()[0].onended = window.stopStream;
                 startTimeTracking(); showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
                 if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
                 
@@ -385,9 +382,9 @@
                 currentCalls = {};
                 checkAndCallOthers();
             } catch (err) { showToast("권한이 거부되었습니다."); }
-        }
+        };
 
-        function stopStream() {
+        window.stopStream = function() {
             if (mediaStream) {
                 mediaStream.getTracks().forEach(t => t.stop());
                 mediaStream = null;
@@ -398,11 +395,7 @@
             
             if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: false });
             stopTimeTracking();
-        }
-
-        document.getElementById('btn-cam').onclick = () => startStream('cam');
-        document.getElementById('btn-screen').onclick = () => startStream('screen');
-        document.getElementById('btn-stop').onclick = stopStream;
+        };
 
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
@@ -525,7 +518,6 @@
             showToast("오늘의 목표 저장 및 기록 완료!");
         };
 
-        // 뽀모도로 타이머
         const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
         function setPomo(mode) {
@@ -549,7 +541,6 @@
         document.getElementById('mode-work').onclick = () => setPomo('work'); document.getElementById('mode-break').onclick = () => setPomo('break');
         document.getElementById('btn-pomo-start').onclick = togglePomo; document.getElementById('btn-pomo-reset').onclick = () => setPomo(pomoMode);
 
-        // 작가별 개별 한 달 결산 렌더링 포함
         window.renderCommunityLog = function() {
             const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
             const todayIdx = get3AMDayIndex();
@@ -651,7 +642,6 @@
                     </div>`;
             }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
 
-            // 하단: 작가별 한 달 결산 카드 생성
             const now = new Date();
             document.getElementById('month-label').textContent = `${now.getMonth() + 1}월 현황`;
 
@@ -660,7 +650,6 @@
                 const totalH = Math.floor(userTotalSec / 3600);
                 const totalM = Math.floor((userTotalSec % 3600) / 60);
 
-                // 작가별 평균 달성률 계산 (월~목 기본 통과 고려)
                 const todayProgress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
                 const avgProgress = Math.min(Math.floor((400 + todayProgress) / 5), 100);
 

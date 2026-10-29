@@ -101,7 +101,7 @@
                         
                         <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
                             <label class="flex items-center gap-2 px-3 text-sm cursor-pointer text-gray-600 hover:text-gray-900 transition-colors">
-                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900" checked>
                                 <span class="font-medium">모자이크</span>
                             </label>
                             <div class="w-px h-6 bg-gray-200"></div>
@@ -113,7 +113,8 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
                         <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group">
-                            <video id="video-element" class="w-full h-full object-cover hidden-safely transition-all duration-300" autoplay playsinline muted></video>
+                            <!-- 내 화면 (기본 모자이크) -->
+                            <video id="video-element" class="w-full h-full object-cover hidden-safely transition-all duration-300 video-blur" autoplay playsinline muted></video>
                             
                             <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
                                 <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
@@ -168,6 +169,7 @@
             </div>
         </section>
 
+        <!-- 일지, Log 탭 내용은 길이 관계상 동일하게 유지 (생략 없이 원본 유지) -->
         <section id="tab-journal" class="tab-content">
             <div class="flex flex-col lg:flex-row gap-8">
                 <div class="lg:w-1/3">
@@ -194,7 +196,6 @@
                         </form>
                     </div>
                 </div>
-
                 <div class="lg:w-2/3">
                     <div class="columns-1 sm:columns-2 gap-6 space-y-6" id="log-list"></div>
                 </div>
@@ -269,7 +270,7 @@
         })();
     </script>
 
-    <!-- 파이어베이스 & PeerJS 모듈 (실시간 화면 연결 완전 개선) -->
+    <!-- 파이어베이스 & PeerJS 모듈 (한글 닉네임 ID 인코딩 완벽 수정) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -291,6 +292,11 @@
         let peer = null;
         let currentCalls = {};
         let remoteStreams = {};
+
+        // 한글 닉네임을 PeerJS가 인식할 수 있는 고유 안전 ID로 인코딩하는 핵심 함수 (버그 해결)
+        function getSafePeerId(nick) {
+            return 'peer_' + encodeURIComponent(nick).replace(/%/g, '_');
+        }
 
         function showToast(msg) {
             const container = document.getElementById('toast-container');
@@ -362,12 +368,11 @@
                 const logDateEl = document.getElementById('log-date');
                 if(logDateEl) logDateEl.valueAsDate = new Date();
                 
-                // PeerJS 초기화 및 수신(Call) 대기
+                // 한글 닉네임도 완벽 호환되는 Peer ID로 초기화
                 try {
                     if (typeof Peer !== 'undefined') {
-                        // 특수문자 제거한 ID 사용
-                        const cleanPeerId = nick.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        peer = new Peer(cleanPeerId, {
+                        const mySafeId = getSafePeerId(nick);
+                        peer = new Peer(mySafeId, {
                             debug: 1,
                             config: {
                                 iceServers: [
@@ -377,11 +382,14 @@
                             }
                         });
 
-                        peer.on('open', (id) => console.log('PeerJS ID 생성 완료:', id));
+                        peer.on('open', (id) => console.log('PeerJS 고유 ID 생성 완료:', id));
                         
                         peer.on('call', (call) => {
-                            // 상대방이 먼저 전화(화면요청)를 걸어왔을 때 응답
-                            call.answer(mediaStream || undefined);
+                            if (mediaStream) {
+                                call.answer(mediaStream);
+                            } else {
+                                call.answer();
+                            }
                             handleCallEvents(call, call.peer);
                         });
                         
@@ -437,9 +445,9 @@
                     if (peer) {
                         const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
                         others.forEach(u => {
-                            const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-                            if (!currentCalls[cleanOtherId]) {
-                                makeCall(cleanOtherId);
+                            const safeOtherId = getSafePeerId(u.id);
+                            if (!currentCalls[safeOtherId]) {
+                                makeCall(safeOtherId);
                             }
                         });
                     }
@@ -468,10 +476,12 @@
 
         function makeCall(peerId) {
             if (!peer) return;
+            // 연결 강제 초기화 후 새 스트림 발송
             if (currentCalls[peerId]) {
                 try { currentCalls[peerId].close(); } catch(e){}
             }
-            const call = peer.call(peerId, mediaStream || new MediaStream());
+            
+            const call = mediaStream ? peer.call(peerId, mediaStream) : peer.call(peerId);
             if(call) handleCallEvents(call, peerId);
         }
 
@@ -479,7 +489,6 @@
             currentCalls[peerId] = call;
             
             call.on('stream', (remoteStream) => {
-                // 수신한 영상 스트림을 메모리에 저장 및 DOM에 할당
                 remoteStreams[peerId] = remoteStream;
                 addRemoteVideo(peerId, remoteStream);
             });
@@ -515,12 +524,12 @@
                 startTimeTracking();
                 showToast(type === 'cam' ? "웹캠 공유 시작" : "화면 공유 시작");
 
-                // 내 화면 공유가 시작되었음을 동료 유저들에게 다시 브로드캐스팅
+                // 새 스트림을 모든 접속자에게 강제로 다시 쏘아줌
                 const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
                 const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
                 others.forEach(u => {
-                    const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-                    makeCall(cleanOtherId);
+                    const safeOtherId = getSafePeerId(u.id);
+                    makeCall(safeOtherId);
                 });
 
             } catch (err) {
@@ -542,12 +551,11 @@
             document.getElementById('btn-stop').classList.add('hidden-safely');
             liveIndicator.classList.add('hidden-safely');
 
-            // 화면 공유 중지 시 상대방들에게 빈 스트림 재전송
             const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
             const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
             others.forEach(u => {
-                const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-                makeCall(cleanOtherId);
+                const safeOtherId = getSafePeerId(u.id);
+                makeCall(safeOtherId);
             });
 
             stopTimeTracking();
@@ -601,25 +609,26 @@
             showToast("오늘의 목표가 저장되었습니다.");
         });
 
-        // 상대방 영상 엘리먼트 동적 바인딩 함수
         function addRemoteVideo(peerId, stream) {
-            // 유저 아이디 기반 카드 찾기
-            const matchingUser = publicUsers.find(u => u.id.replace(/[^a-zA-Z0-9_-]/g, '_') === peerId);
-            const rawId = matchingUser ? matchingUser.id : peerId;
-
-            let userDiv = document.getElementById(`user-card-${rawId}`);
+            // 인코딩된 ID로 역추적
+            const matchingUser = publicUsers.find(u => getSafePeerId(u.id) === peerId);
+            if (!matchingUser) return;
+            
+            const rawId = matchingUser.id;
+            let userDiv = document.getElementById(`user-card-${getSafePeerId(rawId)}`);
             if (!userDiv) return;
 
-            // 유효한 비디오 트랙이 있는지 검증
             const hasVideoTrack = stream && stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
             
             let vid = userDiv.querySelector('video');
             if (hasVideoTrack) {
                 if (!vid) {
                     vid = document.createElement('video');
-                    vid.className = 'w-full h-full object-cover absolute inset-0 z-0 transition-opacity duration-500';
+                    // 브라우저 자동재생 정책 방어 (muted 속성 필수)
+                    vid.className = 'w-full h-full object-cover absolute inset-0 z-0 transition-opacity duration-500 video-blur';
                     vid.autoplay = true;
                     vid.playsinline = true;
+                    vid.muted = true;
                     userDiv.insertBefore(vid, userDiv.firstChild);
                 }
                 vid.srcObject = stream;
@@ -635,12 +644,15 @@
                     if(initialBox) initialBox.style.display = 'none';
                 }
             } else {
-                removeRemoteVideo(rawId);
+                removeRemoteVideo(peerId);
             }
         }
 
-        function removeRemoteVideo(rawId) {
-            let userDiv = document.getElementById(`user-card-${rawId}`);
+        function removeRemoteVideo(peerId) {
+            const matchingUser = publicUsers.find(u => getSafePeerId(u.id) === peerId);
+            if (!matchingUser) return;
+            
+            let userDiv = document.getElementById(`user-card-${getSafePeerId(matchingUser.id)}`);
             if (!userDiv) return;
             let vid = userDiv.querySelector('video');
             if (vid) vid.remove();
@@ -665,13 +677,14 @@
             const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
             
             others.forEach(u => {
-                let card = document.getElementById(`user-card-${u.id}`);
+                const safeId = getSafePeerId(u.id);
+                let card = document.getElementById(`user-card-${safeId}`);
                 const h = Math.floor((u.dailySeconds || 0) / 3600);
                 const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
                 
                 if (!card) {
                     card = document.createElement('div');
-                    card.id = `user-card-${u.id}`;
+                    card.id = `user-card-${safeId}`;
                     card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] flex items-center justify-center group";
                     card.innerHTML = `
                         <div class="ui-layer absolute inset-0 flex flex-col justify-center items-center p-4 transition-colors duration-300 z-10 bg-gray-50/50">
@@ -688,9 +701,8 @@
                     `;
                     grid.appendChild(card);
                     
-                    const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-                    if (remoteStreams[cleanOtherId]) {
-                        addRemoteVideo(cleanOtherId, remoteStreams[cleanOtherId]);
+                    if (remoteStreams[safeId]) {
+                        addRemoteVideo(safeId, remoteStreams[safeId]);
                     }
                 } else {
                     card.querySelector('.time-text').textContent = `${h}h ${m}m`;
@@ -705,8 +717,8 @@
             });
 
             Array.from(grid.children).forEach(card => {
-                const uid = card.id.replace('user-card-', '');
-                if (!others.find(u => u.id === uid)) {
+                const uidSafe = card.id.replace('user-card-', '');
+                if (!others.find(u => getSafePeerId(u.id) === uidSafe)) {
                     card.remove();
                 }
             });

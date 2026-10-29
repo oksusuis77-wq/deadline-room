@@ -25,7 +25,8 @@
         .tab-content { display: none; opacity: 0; transition: opacity 0.4s ease; }
         .tab-content.active { display: block; opacity: 1; }
         
-        .video-blur { filter: blur(8px); }
+        /* 모자이크 강도 하향 및 밝기 조절 (완전 하얗게 되는 현상 방지) */
+        .video-blur { filter: blur(4px) brightness(0.95); }
         .hidden-safely { display: none !important; }
     </style>
 </head>
@@ -289,19 +290,20 @@
             myNickname = savedName;
             document.getElementById('login-overlay').classList.add('hidden-safely');
             document.body.classList.remove('overflow-hidden');
-            initApp(); // 로그인 화면을 건너뛰고 백그라운드에서 연결 시작
+            initApp(); 
         }
 
         // --- Login Screen ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); // 폼 제출 시 새로고침 방지 (필수)
+            e.preventDefault(); 
             
-            const nameInput = document.getElementById('nickname-input');
-            const name = nameInput.value.trim();
+            // 데이터베이스 경로에 오류를 일으키는 슬래시(/) 등의 특수문자 제거 후 닉네임 설정
+            let name = document.getElementById('nickname-input').value.trim();
+            name = name.replace(/\//g, '');
             if(!name) return;
             
             myNickname = name;
-            localStorage.setItem(LOCAL_STORAGE_KEY, myNickname); // 로컬 스토리지에 닉네임 저장
+            localStorage.setItem(LOCAL_STORAGE_KEY, myNickname); 
             
             document.getElementById('login-overlay').classList.add('opacity-0', 'pointer-events-none', 'scale-95');
             setTimeout(() => {
@@ -313,10 +315,9 @@
             await initApp();
         });
 
-        // 로그아웃 (닉네임 초기화) 버튼 기능
         document.getElementById('btn-logout').addEventListener('click', () => {
             localStorage.removeItem(LOCAL_STORAGE_KEY);
-            location.reload(); // 새로고침하면 자동으로 로그인 화면이 다시 뜹니다
+            location.reload(); 
         });
 
         // --- Firebase Init ---
@@ -333,7 +334,8 @@
                 currentUser = cred.user;
 
                 document.getElementById('auth-status').classList.replace('bg-yellow-400', 'bg-emerald-500');
-                document.getElementById('user-info').textContent = `${myNickname} (${currentUser.uid.substring(0,4)})`;
+                // 유저 UID 대신 닉네임 표기로 변경
+                document.getElementById('user-info').textContent = `${myNickname} (온라인)`;
                 
                 document.getElementById('log-date').valueAsDate = new Date();
                 
@@ -343,14 +345,15 @@
             } catch (error) {
                 console.error("Auth Error:", error);
                 document.getElementById('auth-status').classList.replace('bg-yellow-400', 'bg-red-500');
-                document.getElementById('user-info').textContent = '연결 실패 (DB 규칙 확인 필요)';
-                showToast("데이터베이스 연결에 실패했습니다. Firebase 규칙을 확인해주세요.");
+                document.getElementById('user-info').textContent = '연결 실패';
+                showToast("데이터베이스 연결에 실패했습니다.");
             }
         }
 
+        // 유저 프로필 관리에 UID 대신 myNickname을 고유 문서 ID로 사용
         async function initUserProfile() {
             if (!currentUser) return;
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', myNickname);
             const snap = await getDoc(userRef);
             
             if (!snap.exists()) {
@@ -492,7 +495,8 @@
         async function saveDailyProgress() {
             if (!currentUser) return;
             const goalInput = document.getElementById('room-goal-input').value;
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
+            // 닉네임 ID 사용
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', myNickname);
             await updateDoc(userRef, { 
                 dailySeconds: dailySharedSeconds, 
                 goal: goalInput,
@@ -509,7 +513,8 @@
             const grid = document.getElementById('other-users-grid');
             if(!grid) return;
             
-            const others = publicUsers.filter(u => u.id !== currentUser?.uid && u.isOnline);
+            // 나 자신(myNickname)을 제외하고 렌더링
+            const others = publicUsers.filter(u => u.id !== myNickname && u.isOnline);
             
             grid.innerHTML = others.map(u => {
                 const h = Math.floor((u.dailySeconds || 0) / 3600);
@@ -607,7 +612,8 @@
         // ==================== JOURNAL / LOGS LOGIC ====================
         function setupLogsListener() {
             if (!currentUser) return;
-            const logsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'logs');
+            // 닉네임 기준 경로
+            const logsRef = collection(db, 'artifacts', appId, 'users', myNickname, 'logs');
             onSnapshot(query(logsRef), {
                 next: (snap) => {
                     const logs = [];
@@ -657,7 +663,7 @@
                 btn.addEventListener('click', async (e) => {
                     if(!currentUser) return;
                     const id = e.currentTarget.dataset.id;
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id));
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', myNickname, 'logs', id));
                     showToast("기록이 삭제되었습니다.");
                 });
             });
@@ -672,11 +678,11 @@
             const note = document.getElementById('log-note').value;
             
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'logs'), { 
+                await addDoc(collection(db, 'artifacts', appId, 'users', myNickname, 'logs'), { 
                     date, title, count, note, timestamp: Date.now() 
                 });
                 
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', myNickname);
                 const snap = await getDoc(userRef);
                 if (snap.exists()) {
                     await updateDoc(userRef, {
@@ -710,10 +716,10 @@
                 
                 const cardClass = isExpelled 
                     ? 'bg-gray-50 border-gray-200 opacity-70 grayscale'
-                    : (u.id === currentUser?.uid ? 'bg-indigo-50/30 border-indigo-100' : 'bg-white border-gray-100');
+                    : (u.id === myNickname ? 'bg-indigo-50/30 border-indigo-100' : 'bg-white border-gray-100');
                     
                 const warningStars = Array.from({length: 3}).map((_, i) => i < (u.warnings || 0) ? '🚨' : '⚪').join(' ');
-                const charCount = (u.id === currentUser?.uid) ? myTotalCharsToday : (u.monthlyChars || 0);
+                const charCount = (u.id === myNickname) ? myTotalCharsToday : (u.monthlyChars || 0);
 
                 return `
                     <div class="rounded-3xl p-6 md:p-8 card-shadow border ${cardClass} flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 relative overflow-hidden transition-all duration-300">
@@ -727,7 +733,7 @@
                             </div>
                             <div>
                                 <div class="font-bold text-gray-900 text-xl flex items-center gap-2 mb-1">
-                                    ${u.nickname || '알 수 없음'} ${u.id === currentUser?.uid ? '<span class="text-[0.6rem] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-[Pretendard] shadow-sm">ME</span>' : ''}
+                                    ${u.nickname || '알 수 없음'} ${u.id === myNickname ? '<span class="text-[0.6rem] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-[Pretendard] shadow-sm">ME</span>' : ''}
                                 </div>
                                 <div class="text-sm font-medium ${isExpelled ? 'text-gray-500' : 'text-red-500'} flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg shadow-sm border border-gray-50 inline-flex">
                                     <span class="text-xs text-gray-400 font-[Pretendard]">경고</span>
@@ -780,7 +786,7 @@
 
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', myNickname);
                 updateDoc(userRef, { isOnline: false, lastActive: serverTimestamp() }).catch(()=>{});
             }
         });

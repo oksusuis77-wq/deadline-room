@@ -10,749 +10,216 @@
         @font-face {
             font-family: 'LeeSeoyun';
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
         }
-        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.05rem; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
-
-        .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
-        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.03); }
-        
-        .tab-content { display: none; opacity: 0; transition: opacity 0.4s ease; }
-        .tab-content.active { display: block; opacity: 1; }
-        
-        .video-blur { filter: blur(4px) brightness(0.95); }
+        body { font-family: 'LeeSeoyun', sans-serif; background-color: #FAFAFA; color: #111827; }
         .hidden-safely { display: none !important; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .video-blur { filter: blur(6px); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-gray-200 overflow-hidden">
+<body class="min-h-screen flex flex-col overflow-hidden">
 
-    <!-- Login Overlay -->
-    <div id="login-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-50 flex items-center justify-center">
-        <div class="bg-white rounded-3xl p-8 card-shadow max-w-md w-full mx-4 text-center">
-            <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">마감방 입장</h2>
-            <p class="text-gray-500 text-sm mb-6 font-[Pretendard]">함께 마감할 동료들에게 보여질 닉네임을 입력해주세요.</p>
-            <form id="login-form" class="space-y-4" action="javascript:void(0);" onsubmit="window.doLogin(); return false;">
-                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-lg focus:ring-2 focus:ring-gray-900 outline-none font-[Pretendard] font-bold text-gray-900 placeholder-gray-300" placeholder="닉네임 (예: 김작가)">
-                <button type="button" onclick="window.doLogin()" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg shadow-gray-200 cursor-pointer">입장하기</button>
+    <!-- 로그인 오버레이 -->
+    <div id="login-overlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center p-8 border rounded-3xl shadow-xl bg-white max-w-sm w-full">
+            <h2 class="text-2xl font-bold mb-4">마감방 입장</h2>
+            <form onsubmit="window.doLogin(); return false;">
+                <input type="text" id="nickname-input" required class="w-full border p-3 rounded-xl mb-4 text-center" placeholder="닉네임 입력">
+                <button type="submit" class="w-full bg-gray-900 text-white p-3 rounded-xl font-bold">입장하기</button>
             </form>
         </div>
     </div>
 
-    <!-- Toast Message -->
-    <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 hidden-safely transition-all duration-300">
-        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-sm flex items-center gap-2">
-            알림 메시지
-        </div>
-    </div>
-
-    <!-- Header & Navigation -->
-    <header class="glass-header sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-lg leading-none shadow-sm">M</div>
-                <h1 class="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
-                    마감방
-                    <button id="btn-logout" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-md transition-colors font-normal hidden md:block">닉네임 변경</button>
-                </h1>
-            </div>
-            
-            <nav class="hidden md:flex items-center gap-8">
-                <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-journal">개인 집필 일지</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-community">Log</button>
-            </nav>
-
-            <div class="flex items-center gap-3">
-                <div id="auth-status" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                <span id="user-info" class="text-xs text-gray-500 font-medium hidden md:block">연결 대기중...</span>
-            </div>
+    <!-- 헤더 -->
+    <header class="bg-white border-b sticky top-0 z-40 p-4 flex justify-between items-center shadow-sm">
+        <h1 class="font-bold text-lg">마감방</h1>
+        <div class="flex items-center gap-3">
+            <span id="user-info" class="text-sm font-bold text-gray-600">대기중...</span>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
-        <section id="tab-room" class="tab-content active space-y-8">
-            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
-                <span class="text-gray-500 font-bold whitespace-nowrap sm:pl-4">오늘의 목표</span>
-                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 placeholder-gray-300 px-2 text-center sm:text-left" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
-                <button id="btn-save-goal" class="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-md font-medium">저장</button>
+    <main class="p-6 max-w-6xl mx-auto w-full">
+        <!-- 상단 컨트롤러 -->
+        <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 cursor-pointer font-bold">
+                    <input type="checkbox" id="blur-toggle" checked class="w-5 h-5"> 모자이크
+                </label>
             </div>
+            <div class="flex gap-2">
+                <button id="btn-cam" class="bg-gray-200 px-4 py-2 rounded-xl font-bold">웹캠 공유</button>
+                <button id="btn-screen" class="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold">화면 공유</button>
+                <button id="btn-stop" class="bg-red-100 text-red-600 px-4 py-2 rounded-xl font-bold hidden-safely">공유 중지</button>
+            </div>
+        </div>
 
-            <div class="flex flex-col lg:flex-row gap-8">
-                <div class="lg:w-2/3 space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">함께 마감하는 집필실</h2>
-                        </div>
-                        
-                        <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-                            <label class="flex items-center gap-2 px-3 text-sm cursor-pointer text-gray-600 hover:text-gray-900 transition-colors">
-                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900" checked>
-                                <span class="font-medium">모자이크</span>
-                            </label>
-                            <div class="w-px h-6 bg-gray-200"></div>
-                            <button id="btn-cam" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold transition-colors cursor-pointer">웹캠</button>
-                            <button id="btn-screen" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors shadow-md cursor-pointer">화면공유</button>
-                            <button id="btn-stop" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors cursor-pointer">중지</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
-                        <!-- 내 비디오 영역 -->
-                        <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group">
-                            <video id="video-element" class="w-full h-full object-cover hidden-safely transition-all duration-300 video-blur" autoplay playsinline muted></video>
-                            
-                            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
-                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                </div>
-                                <p class="text-sm font-medium">내 화면이 여기에 표시됩니다</p>
-                            </div>
-
-                            <div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-2 z-20">
-                                <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
-                                나 (<span class="daily-time-display">00:00:00</span>)
-                            </div>
-                        </div>
-                        <!-- 다른 사람 영역 렌더링될 곳 -->
-                        <div id="other-users-grid" class="contents"></div>
-                    </div>
+        <!-- 비디오 그리드 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="video-grid">
+            <!-- 내 화면 -->
+            <div class="bg-gray-100 rounded-3xl overflow-hidden aspect-[4/3] relative border-2 border-gray-200">
+                <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-10" autoplay playsinline muted></video>
+                <div id="video-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-400 font-bold z-0">
+                    내 화면
                 </div>
-
-                <div class="lg:w-1/3 flex flex-col gap-6">
-                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
-                        <h3 class="font-bold text-gray-900 mb-4">하루 2시간 챌린지</h3>
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-2xl font-light text-gray-900 daily-time-display">00:00:00</span>
-                            <span class="text-gray-400 text-sm font-medium" id="progress-percent">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                            <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-100 w-0"></div>
-                        </div>
-                    </div>
+                <div class="absolute top-3 left-3 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-bold z-20">
+                    나 (<span class="daily-time-display">00:00:00</span>)
                 </div>
             </div>
-        </section>
-
-        <section id="tab-journal" class="tab-content">
-            <!-- (저널 탭 내용은 이전과 동일) -->
-            <div class="flex flex-col lg:flex-row gap-8">
-                <div class="lg:w-1/3">
-                    <div class="sticky top-24 bg-white rounded-3xl p-8 card-shadow border border-gray-100">
-                        <h2 class="text-xl font-bold text-gray-900 mb-6">오늘의 일지 작성</h2>
-                        <form id="log-form" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2">날짜</label>
-                                <input type="date" id="log-date" required class="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-gray-900 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2">제목</label>
-                                <input type="text" id="log-title" required class="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-gray-900 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2">작업량</label>
-                                <input type="number" id="log-count" required class="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-gray-900 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2">내용</label>
-                                <textarea id="log-note" required rows="4" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-gray-900 outline-none resize-none"></textarea>
-                            </div>
-                            <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold transition-colors">저장</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="lg:w-2/3"><div class="columns-1 sm:columns-2 gap-6 space-y-6" id="log-list"></div></div>
-            </div>
-        </section>
-
-        <section id="tab-community" class="tab-content">
-            <div class="grid grid-cols-1 gap-6" id="community-list"></div>
-        </section>
+            
+            <!-- 다른 사람 화면 (여기에 자동 생성됨) -->
+            <div id="other-users-grid" class="contents"></div>
+        </div>
     </main>
 
-    <!-- UI 독립 동작 스크립트 -->
-    <script>
-        window.LOCAL_KEY = 'deadline_room_nickname';
-        window.myNickname = '';
-
-        function showToast(msg) {
-            var container = document.getElementById('toast-container');
-            var messageEl = document.getElementById('toast-message');
-            if(container && messageEl) {
-                messageEl.textContent = msg;
-                container.classList.remove('hidden-safely');
-                setTimeout(function() { container.classList.add('hidden-safely'); }, 3000);
-            }
-        }
-
-        window.doLogin = function() {
-            var input = document.getElementById('nickname-input');
-            var val = input ? input.value.trim() : '';
-            val = val.replace(/[\/\\#\$\.\[\]]/g, '');
-            if (!val) { alert('닉네임을 입력해주세요.'); return; }
-            window.myNickname = val;
-            try { localStorage.setItem(window.LOCAL_KEY, val); } catch(e){}
-            var overlay = document.getElementById('login-overlay');
-            if (overlay) overlay.style.setProperty('display', 'none', 'important');
-            document.body.classList.remove('overflow-hidden');
-            if (typeof window.startBackendApp === 'function') window.startBackendApp(val);
-        };
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var navBtns = document.querySelectorAll('.nav-btn');
-            var tabContents = document.querySelectorAll('.tab-content');
-            
-            navBtns.forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    navBtns.forEach(function(b) {
-                        b.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900');
-                        b.classList.add('text-gray-400');
-                    });
-                    tabContents.forEach(function(content) { content.classList.remove('active'); });
-                    
-                    btn.classList.add('text-gray-900', 'border-b-2', 'border-gray-900');
-                    btn.classList.remove('text-gray-400');
-                    var targetEl = document.getElementById(btn.dataset.target);
-                    if(targetEl) targetEl.classList.add('active');
-                    if (btn.dataset.target === 'tab-community' && typeof window.renderCommunityLog === 'function') {
-                        window.renderCommunityLog();
-                    }
-                });
-            });
-
-            try {
-                var saved = localStorage.getItem(window.LOCAL_KEY);
-                if (saved) {
-                    window.myNickname = saved;
-                    var overlay = document.getElementById('login-overlay');
-                    if (overlay) overlay.style.setProperty('display', 'none', 'important');
-                    document.body.classList.remove('overflow-hidden');
-                }
-            } catch(e){}
-        });
-    </script>
-
-    <!-- 백엔드 핵심 스크립트 -->
+    <!-- 스크립트 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, updateDoc, onSnapshot, query, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = 'deadline-room-app';
         const firebaseConfig = {
           apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4",
           authDomain: "deadline-room-768bf.firebaseapp.com",
-          projectId: "deadline-room-768bf",
-          storageBucket: "deadline-room-768bf.firebasestorage.app",
-          messagingSenderId: "686556088226",
-          appId: "1:686556088226:web:3fd51f9fd9ce1170fe54fb"
+          projectId: "deadline-room-768bf"
         };
         
-        let app, auth, db, currentUser = null;
-        let publicUsers = [];
-
-        // PeerJS 변수
+        let app = initializeApp(firebaseConfig);
+        let auth = getAuth(app);
+        let db = getFirestore(app);
+        
         let peer = null;
-        let isPeerReady = false; // [핵심 수정 1] 연결 준비 상태를 담는 플래그
+        let isPeerReady = false;
         let currentCalls = {};
-        let remoteStreams = {};
+        let publicUsers = [];
+        let mediaStream = null;
+        let dailySharedSeconds = 0;
+        let sharingInterval = null;
+        let lastTick = null;
 
-        function getSafePeerId(nick) {
-            return 'peer_' + encodeURIComponent(nick).replace(/%/g, '_');
-        }
-
-        window.startBackendApp = function(nick) {
-            showToast(`${nick}님, 입장 중입니다...`);
-            initApp();
+        window.doLogin = async () => {
+            const nick = document.getElementById('nickname-input').value.trim();
+            if(!nick) return;
+            localStorage.setItem('deadline_nickname', nick);
+            document.getElementById('login-overlay').style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+            
+            await signInAnonymously(auth);
+            document.getElementById('user-info').textContent = `${nick} (온라인)`;
+            
+            initWebRTC(nick);
+            initDB(nick);
         };
 
-        const savedName = localStorage.getItem(window.LOCAL_KEY);
-        if (savedName) initApp();
-
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            localStorage.removeItem(window.LOCAL_KEY);
-            location.reload(); 
-        });
-
-        async function initApp() {
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            if(!nick) return;
-
-            const authStatus = document.getElementById('auth-status');
-            const userInfo = document.getElementById('user-info');
-            
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                const cred = await signInAnonymously(auth);
-                currentUser = cred.user;
-
-                if(authStatus) authStatus.className = 'w-2 h-2 rounded-full bg-emerald-500';
-                if(userInfo) userInfo.textContent = `${nick} (온라인)`;
-                
-                const logDateEl = document.getElementById('log-date');
-                if(logDateEl) logDateEl.valueAsDate = new Date();
-                
-                // WebRTC 초기화
-                try {
-                    if (typeof Peer !== 'undefined') {
-                        const mySafeId = getSafePeerId(nick);
-                        peer = new Peer(mySafeId, {
-                            debug: 1,
-                            config: {
-                                iceServers: [
-                                    { urls: 'stun:stun.l.google.com:19302' },
-                                    { urls: 'stun:stun1.l.google.com:19302' }
-                                ]
-                            }
-                        });
-
-                        peer.on('open', (id) => {
-                            console.log('Peer ID 생성 성공:', id);
-                            isPeerReady = true; // 서버 통신 준비 완료
-                            checkAndCallOthers(); // 밀려있던 연결 요청 즉시 실행
-                        });
-
-                        peer.on('disconnected', () => {
-                            console.warn('PeerJS 끊김. 재연결 시도...');
-                            isPeerReady = false;
-                            peer.reconnect();
-                        });
-                        
-                        peer.on('call', (call) => {
-                            if (mediaStream) call.answer(mediaStream);
-                            else call.answer();
-                            handleCallEvents(call, call.peer);
-                        });
-                        
-                        peer.on('error', (err) => console.warn('PeerJS 에러:', err));
-                    }
-                } catch(pe) { console.warn("PeerJS 오류:", pe); }
-
-                await initUserProfile();
-                setupPublicUsersListener();
-                setupLogsListener();
-            } catch (error) {
-                console.error("Auth Error:", error);
-            }
+        if(localStorage.getItem('deadline_nickname')) {
+            window.doLogin = () => {};
+            const nick = localStorage.getItem('deadline_nickname');
+            document.getElementById('nickname-input').value = nick;
+            document.getElementById('login-overlay').style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+            signInAnonymously(auth).then(() => {
+                document.getElementById('user-info').textContent = `${nick} (온라인)`;
+                initWebRTC(nick);
+                initDB(nick);
+            });
         }
 
-        // 공용 연결 호출 함수 (준비되었을 때만 발송)
+        function initWebRTC(nick) {
+            peer = new Peer('peer_' + encodeURIComponent(nick).replace(/%/g, '_'), {
+                config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+            });
+            peer.on('open', () => {
+                isPeerReady = true;
+                checkAndCallOthers();
+            });
+            peer.on('call', (call) => {
+                call.answer(mediaStream || undefined);
+                currentCalls[call.peer] = call;
+                call.on('stream', (stream) => addRemoteVideo(call.peer, stream));
+            });
+        }
+
+        function initDB(nick) {
+            const userRef = doc(db, 'artifacts', 'app', 'users', nick);
+            setDoc(userRef, { id: nick, isOnline: true, isSharing: false, lastActive: serverTimestamp() }, {merge: true});
+            
+            getDoc(userRef).then(snap => {
+                if(snap.exists() && snap.data().dailySeconds) dailySharedSeconds = snap.data().dailySeconds;
+                updateTimeUI();
+            });
+
+            onSnapshot(collection(db, 'artifacts', 'app', 'users'), (snap) => {
+                publicUsers = [];
+                snap.forEach(d => publicUsers.push(d.data()));
+                renderOtherUsers();
+                checkAndCallOthers();
+            });
+        }
+
         function checkAndCallOthers() {
-            if (!isPeerReady || !peer || peer.disconnected) return;
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
-
-            others.forEach(u => {
-                const safeOtherId = getSafePeerId(u.id);
-                // 내가 화면을 켰거나, 상대가 켰다고 DB에 적혀있으면 연결 쏴줌
-                if (u.isSharing || mediaStream) {
-                    if (!currentCalls[safeOtherId]) {
-                        makeCall(safeOtherId);
+            if(!isPeerReady || !peer) return;
+            const myNick = localStorage.getItem('deadline_nickname');
+            publicUsers.filter(u => u.id !== myNick && u.isOnline).forEach(u => {
+                const pId = 'peer_' + encodeURIComponent(u.id).replace(/%/g, '_');
+                if((u.isSharing || mediaStream) && !currentCalls[pId]) {
+                    const call = mediaStream ? peer.call(pId, mediaStream) : peer.call(pId);
+                    if(call) {
+                        currentCalls[pId] = call;
+                        call.on('stream', (stream) => addRemoteVideo(pId, stream));
                     }
                 }
-            });
-        }
-
-        // 죽은 세션(나간 사람) 정리 함수
-        function cleanupStaleCalls() {
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            const activeIds = publicUsers.filter(u => u.id !== nick && u.isOnline).map(u => getSafePeerId(u.id));
-            
-            Object.keys(currentCalls).forEach(peerId => {
-                if (!activeIds.includes(peerId)) {
-                    try { currentCalls[peerId].close(); } catch(e){}
-                    delete currentCalls[peerId];
-                    delete remoteStreams[peerId];
-                    removeRemoteVideo(peerId);
-                }
-            });
-        }
-
-        function setupPublicUsersListener() {
-            if (!currentUser) return;
-            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-            onSnapshot(query(usersRef), {
-                next: (snap) => {
-                    publicUsers = [];
-                    snap.forEach(d => publicUsers.push({ id: d.id, ...d.data() }));
-                    
-                    renderOtherUsers();
-                    cleanupStaleCalls(); // 죽은 연결 제거
-                    checkAndCallOthers(); // 새 연결 성사 확인
-                    
-                    if (document.getElementById('tab-community').classList.contains('active')) {
-                        renderCommunityLog();
-                    }
-                },
-                error: (e) => console.error(e)
-            });
-        }
-
-        async function initUserProfile() {
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            if (!currentUser || !nick) return;
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
-            const snap = await getDoc(userRef);
-            
-            if (!snap.exists()) {
-                await setDoc(userRef, {
-                    nickname: nick, goal: '', dailySeconds: 0, totalChars: 0,
-                    warnings: 0, streak: 0, weeklyDays: 0, monthlyHours: 0, monthlyChars: 0,
-                    lastActive: serverTimestamp(), isOnline: true, isSharing: false
-                });
-                dailySharedSeconds = 0;
-            } else {
-                await updateDoc(userRef, { nickname: nick, isOnline: true, lastActive: serverTimestamp() });
-                if (snap.data().goal) document.getElementById('room-goal-input').value = snap.data().goal;
-                dailySharedSeconds = snap.data().dailySeconds || 0;
-            }
-            updateProgressUI();
-        }
-
-        let mediaStream = null;
-        let sharingInterval = null;
-        let dailySharedSeconds = 0;
-        let lastTick = null; // [핵심 수정 2] 절대 시간 측정용 변수
-        const GOAL_SECONDS = 2 * 60 * 60; 
-
-        const videoElement = document.getElementById('video-element');
-        const videoPlaceholder = document.getElementById('video-placeholder');
-        const liveIndicator = document.getElementById('live-indicator');
-        
-        document.getElementById('blur-toggle').addEventListener('change', (e) => {
-            e.target.checked ? videoElement.classList.add('video-blur') : videoElement.classList.remove('video-blur');
-            document.querySelectorAll('.remote-video').forEach(vid => {
-                e.target.checked ? vid.classList.add('video-blur') : vid.classList.remove('video-blur');
-            });
-        });
-
-        function makeCall(peerId) {
-            if (!isPeerReady || !peer) return;
-            if (currentCalls[peerId]) {
-                try { currentCalls[peerId].close(); } catch(e){}
-            }
-            const call = mediaStream ? peer.call(peerId, mediaStream) : peer.call(peerId);
-            if(call) handleCallEvents(call, peerId);
-        }
-
-        function handleCallEvents(call, peerId) {
-            currentCalls[peerId] = call;
-            
-            call.on('stream', (remoteStream) => {
-                remoteStreams[peerId] = remoteStream;
-                addRemoteVideo(peerId, remoteStream);
-            });
-            
-            call.on('close', () => {
-                delete currentCalls[peerId];
-                delete remoteStreams[peerId];
-                removeRemoteVideo(peerId);
             });
         }
 
         async function startStream(type) {
-            if (mediaStream) stopStream();
+            if(mediaStream) stopStream();
             try {
-                if (type === 'cam') {
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                } else {
-                    mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-                }
-
-                videoElement.srcObject = mediaStream;
-                videoElement.classList.remove('hidden-safely');
-                videoPlaceholder.classList.add('hidden-safely');
-                videoElement.play().catch(e => console.log("비디오 재생 대기", e));
+                mediaStream = await (type === 'cam' ? navigator.mediaDevices.getUserMedia({video:true}) : navigator.mediaDevices.getDisplayMedia({video:true}));
+                document.getElementById('video-element').srcObject = mediaStream;
+                document.getElementById('video-element').classList.remove('hidden-safely');
                 
                 document.getElementById('btn-cam').classList.add('hidden-safely');
                 document.getElementById('btn-screen').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely');
-                liveIndicator.classList.remove('hidden-safely');
-
-                mediaStream.getVideoTracks()[0].onended = stopStream;
-                startTimeTracking(); // 타이머 시작
-                showToast(type === 'cam' ? "웹캠 공유 시작" : "화면 공유 시작");
-
-                const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-                if (currentUser && nick) {
-                    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
-                    updateDoc(userRef, { isSharing: true });
-                }
-
-                // 공유 시작 즉시 상대방들에게 쏴줌
+                
+                updateDBSharing(true);
+                startTimer();
                 checkAndCallOthers();
-
-            } catch (err) {
-                showToast("권한이 거부되었거나 장치가 없습니다.");
-            }
+                
+                mediaStream.getVideoTracks()[0].onended = stopStream;
+            } catch(e) { alert("화면 권한이 없습니다."); }
         }
 
         function stopStream() {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(t => t.stop());
-                mediaStream = null;
-            }
-            videoElement.srcObject = null;
-            videoElement.classList.add('hidden-safely');
-            videoPlaceholder.classList.remove('hidden-safely');
+            if(mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+            mediaStream = null;
+            document.getElementById('video-element').classList.add('hidden-safely');
             
             document.getElementById('btn-cam').classList.remove('hidden-safely');
             document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
-            liveIndicator.classList.add('hidden-safely');
-
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            if (currentUser && nick) {
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
-                updateDoc(userRef, { isSharing: false });
-            }
-
-            Object.keys(currentCalls).forEach(peerId => {
-                if(currentCalls[peerId]) {
-                    try { currentCalls[peerId].close(); } catch(e){}
-                    delete currentCalls[peerId];
-                }
-            });
-
-            stopTimeTracking(); // 타이머 중지
-        }
-
-        document.getElementById('btn-cam').addEventListener('click', () => startStream('cam'));
-        document.getElementById('btn-screen').addEventListener('click', () => startStream('screen'));
-        document.getElementById('btn-stop').addEventListener('click', stopStream);
-
-        function updateProgressUI() {
-            const h = Math.floor(dailySharedSeconds / 3600).toString().padStart(2, '0');
-            const m = Math.floor((dailySharedSeconds % 3600) / 60).toString().padStart(2, '0');
-            const s = (dailySharedSeconds % 60).toString().padStart(2, '0');
             
-            document.querySelectorAll('.daily-time-display').forEach(el => el.textContent = `${h}:${m}:${s}`);
-            
-            const percent = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
-            document.getElementById('progress-bar').style.width = `${percent}%`;
-            document.getElementById('progress-percent').textContent = `${Math.floor(percent)}%`;
+            updateDBSharing(false);
+            stopTimer();
+            Object.values(currentCalls).forEach(c => c.close());
+            currentCalls = {};
         }
 
-        // [핵심 수정 2 적용 영역] 탭을 내려도 완벽하게 시간 갭을 보정하는 타이머 로직
-        function startTimeTracking() {
-            if (sharingInterval) return;
-            lastTick = Date.now();
-            sharingInterval = setInterval(() => {
-                const now = Date.now();
-                const delta = Math.floor((now - lastTick) / 1000);
-                
-                if (delta > 0) {
-                    const oldSeconds = dailySharedSeconds;
-                    dailySharedSeconds += delta;
-                    lastTick += delta * 1000; // 보정 완료
-                    
-                    updateProgressUI();
-                    
-                    // 10초 선을 넘었을 때만 DB 저장 (브라우저가 멈춰서 1분치 델타가 한방에 들어와도 정확히 저장됨)
-                    if (Math.floor(dailySharedSeconds / 10) > Math.floor(oldSeconds / 10)) {
-                        saveDailyProgress();
-                    }
-                }
-            }, 1000);
+        function updateDBSharing(isSharing) {
+            const nick = localStorage.getItem('deadline_nickname');
+            if(nick) updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { isSharing });
         }
 
-        function stopTimeTracking() {
-            if (sharingInterval) {
-                clearInterval(sharingInterval);
-                sharingInterval = null;
-                saveDailyProgress();
-            }
-        }
-
-        async function saveDailyProgress() {
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            if (!currentUser || !nick) return;
-            const goalInput = document.getElementById('room-goal-input').value;
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
-            await updateDoc(userRef, { 
-                dailySeconds: dailySharedSeconds, goal: goalInput, lastActive: serverTimestamp()
-            }).catch(e => console.error("Sync Error:", e));
-        }
-
-        document.getElementById('btn-save-goal').addEventListener('click', () => {
-            saveDailyProgress();
-            showToast("오늘의 목표가 저장되었습니다.");
-        });
-
-        function addRemoteVideo(peerId, stream) {
-            const matchingUser = publicUsers.find(u => getSafePeerId(u.id) === peerId);
-            if (!matchingUser) return;
-            
-            let userDiv = document.getElementById(`user-card-${matchingUser.id}`);
-            if (!userDiv) return;
-
-            const hasVideoTrack = stream && stream.getVideoTracks().length > 0;
-            
-            let vid = userDiv.querySelector('video.remote-video');
-            if (hasVideoTrack) {
-                if (!vid) {
-                    vid = document.createElement('video');
-                    const isBlur = document.getElementById('blur-toggle').checked;
-                    vid.className = `remote-video w-full h-full object-cover absolute inset-0 z-0 transition-opacity duration-500 ${isBlur ? 'video-blur' : ''}`;
-                    vid.autoplay = true;
-                    vid.playsinline = true;
-                    vid.muted = true;
-                    userDiv.insertBefore(vid, userDiv.firstChild);
-                }
-                
-                if (vid.srcObject !== stream) {
-                    vid.srcObject = stream;
-                }
-                
-                vid.play().catch(e => console.error("원격 비디오 에러:", e));
-
-                const uiLayer = userDiv.querySelector('.ui-layer');
-                if(uiLayer) {
-                    uiLayer.classList.replace('bg-gray-50/50', 'bg-black/30');
-                    const nameText = userDiv.querySelector('.name-text');
-                    if(nameText) nameText.classList.replace('text-gray-900', 'text-white');
-                    const initialBox = userDiv.querySelector('.initial-box');
-                    if(initialBox) initialBox.style.display = 'none';
-                }
-            } else {
-                removeRemoteVideo(peerId);
-            }
-        }
-
-        function removeRemoteVideo(peerId) {
-            const matchingUser = publicUsers.find(u => getSafePeerId(u.id) === peerId);
-            if (!matchingUser) return;
-            
-            let userDiv = document.getElementById(`user-card-${matchingUser.id}`);
-            if (!userDiv) return;
-            
-            let vid = userDiv.querySelector('video.remote-video');
-            if (vid) vid.remove();
-
-            const uiLayer = userDiv.querySelector('.ui-layer');
-            if(uiLayer) {
-                uiLayer.classList.replace('bg-black/30', 'bg-gray-50/50');
-                const nameText = userDiv.querySelector('.name-text');
-                if(nameText) nameText.classList.replace('text-white', 'text-gray-900');
-                const initialBox = userDiv.querySelector('.initial-box');
-                if(initialBox) initialBox.style.display = 'flex';
-            }
-        }
+        document.getElementById('btn-cam').onclick = () => startStream('cam');
+        document.getElementById('btn-screen').onclick = () => startStream('screen');
+        document.getElementById('btn-stop').onclick = stopStream;
+        
+        document.getElementById('blur-toggle').onchange = (e) => {
+            const isBlur = e.target.checked;
+            document.getElementById('video-element').classList.toggle('video-blur', isBlur);
+            document.querySelectorAll('.remote-video').forEach(v => v.classList.toggle('video-blur', isBlur));
+        };
 
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            if(!grid) return;
-            
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
-            
-            others.forEach(u => {
-                let card = document.getElementById(`user-card-${u.id}`);
-                const h = Math.floor((u.dailySeconds || 0) / 3600);
-                const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
-                
-                if (!card) {
-                    card = document.createElement('div');
-                    card.id = `user-card-${u.id}`;
-                    card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] flex items-center justify-center group";
-                    card.innerHTML = `
-                        <div class="ui-layer absolute inset-0 flex flex-col justify-center items-center p-4 transition-colors duration-300 z-10 bg-gray-50/50">
-                            <div class="w-16 h-16 bg-white border border-gray-100 rounded-2xl mx-auto flex items-center justify-center text-gray-400 font-bold text-2xl mb-4 shadow-sm initial-box">
-                                ${(u.nickname || '?').charAt(0)}
-                            </div>
-                            <p class="text-base font-bold text-gray-900 font-[Pretendard] mb-1 name-text shadow-sm">${u.nickname}</p>
-                            <p class="text-sm text-gray-500 font-[Pretendard] truncate px-4 w-full text-center goal-text shadow-sm">${u.goal || '목표 없음'}</p>
-                        </div>
-                        <div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5 shadow-sm z-20">
-                            <span class="w-1.5 h-1.5 rounded-full status-dot ${u.dailySeconds > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
-                            <span class="time-text">${h}h ${m}m</span>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                    
-                    const safeId = getSafePeerId(u.id);
-                    if (remoteStreams[safeId]) {
-                        addRemoteVideo(safeId, remoteStreams[safeId]);
-                    }
-                } else {
-                    card.querySelector('.time-text').textContent = `${h}h ${m}m`;
-                    card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
-                    const dot = card.querySelector('.status-dot');
-                    if(u.dailySeconds > 0) {
-                        dot.classList.add('bg-emerald-400', 'animate-pulse');
-                        dot.classList.remove('bg-gray-400');
-                    }
-                }
-            });
-
-            Array.from(grid.children).forEach(card => {
-                const rawId = card.id.replace('user-card-', '');
-                if (!others.find(u => u.id === rawId)) card.remove();
-            });
-        }
-
-        function setupLogsListener() {
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            if (!currentUser || !nick) return;
-            const logsRef = collection(db, 'artifacts', appId, 'users', nick, 'logs');
-            onSnapshot(query(logsRef), {
-                next: (snap) => {
-                    const logs = [];
-                    snap.forEach(d => logs.push({ id: d.id, ...d.data() }));
-                    logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    renderLogs(logs);
-                }
-            });
-        }
-
-        function renderLogs(logs) {
-            const list = document.getElementById('log-list');
-            list.innerHTML = '';
-            logs.forEach(log => {
-                const el = document.createElement('div');
-                el.className = 'bg-white rounded-3xl p-6 card-shadow border border-gray-100 break-inside-avoid relative group mb-6 inline-block w-full';
-                el.innerHTML = `
-                    <h3 class="text-lg font-bold text-gray-900">${log.title}</h3>
-                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${log.note}</p>
-                `;
-                list.appendChild(el);
-            });
-        }
-
-        document.getElementById('log-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            await addDoc(collection(db, 'artifacts', appId, 'users', nick, 'logs'), { 
-                date: document.getElementById('log-date').value,
-                title: document.getElementById('log-title').value,
-                count: parseInt(document.getElementById('log-count').value),
-                note: document.getElementById('log-note').value,
-                timestamp: Date.now() 
-            });
-            e.target.reset();
-            showToast("저장되었습니다.");
-        });
-
-        window.addEventListener('beforeunload', () => {
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            if (currentUser && nick) {
-                updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', nick), { 
-                    isOnline: false, isSharing: false, lastActive: serverTimestamp() 
-                }).catch(()=>{});
-            }
-        });
-
-    </script>
-</body>
-</html>
+            const myNick = localStorage.

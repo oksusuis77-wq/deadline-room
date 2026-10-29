@@ -12,6 +12,7 @@
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
             font-weight: normal;
             font-style: normal;
+            font-display: swap;
         }
         body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.05rem; }
         
@@ -38,8 +39,97 @@
             <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">마감방 입장</h2>
             <p class="text-gray-500 text-sm mb-6 font-[Pretendard]">함께 마감할 동료들에게 보여질 닉네임을 입력해주세요.</p>
-            <form id="login-form" class="space-y-4">
+            <form id="login-form" onsubmit="return false;" class="space-y-4">
                 <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-lg focus:ring-2 focus:ring-gray-900 outline-none font-[Pretendard] font-bold text-gray-900 placeholder-gray-300" placeholder="닉네임 (예: 김작가)">
-                <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg shadow-gray-200">입장하기</button>
+                <button type="submit" id="btn-login-submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg shadow-gray-200">입장하기</button>
             </form>
         </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 hidden-safely transition-all duration-300">
+        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-sm flex items-center gap-2">
+            알림 메시지
+        </div>
+    </div>
+
+    <!-- Header & Navigation -->
+    <header class="glass-header sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-lg leading-none shadow-sm">M</div>
+                <h1 class="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
+                    마감방
+                    <button id="btn-logout" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-md transition-colors font-normal hidden md:block">닉네임 변경</button>
+                </h1>
+            </div>
+            
+            <nav class="hidden md:flex items-center gap-8">
+                <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-journal">개인 집필 일지</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-community">Log</button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div id="auth-status" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                <span id="user-info" class="text-xs text-gray-500 font-medium hidden md:block">연결 대기중...</span>
+            </div>
+        </div>
+        <nav class="md:hidden flex items-center gap-6 px-6 pb-3 overflow-x-auto">
+            <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 whitespace-nowrap" data-target="tab-room">집필실</button>
+            <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium whitespace-nowrap" data-target="tab-journal">개인 집필 일지</button>
+            <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium whitespace-nowrap" data-target="tab-community">Log</button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
+        <section id="tab-room" class="tab-content active space-y-8">
+            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
+                <span class="text-gray-500 font-bold whitespace-nowrap sm:pl-4">오늘의 목표</span>
+                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 placeholder-gray-300 px-2 text-center sm:text-left" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
+                <button id="btn-save-goal" class="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-md font-medium">저장</button>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="lg:w-2/3 space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">함께 마감하는 집필실</h2>
+                            <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                            <label class="flex items-center gap-2 px-3 text-sm cursor-pointer text-gray-600 hover:text-gray-900 transition-colors">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900">
+                                <span class="font-medium">모자이크</span>
+                            </label>
+                            <div class="w-px h-6 bg-gray-200"></div>
+                            <button id="btn-cam" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold transition-colors">웹캠</button>
+                            <button id="btn-screen" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">화면공유</button>
+                            <button id="btn-stop" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors">중지</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
+                        <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group">
+                            <video id="video-element" class="w-full h-full object-cover hidden-safely transition-all duration-300" autoplay playsinline muted></video>
+                            
+                            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
+                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <p class="text-sm font-medium">내 화면이 여기에 표시됩니다</p>
+                            </div>
+
+                            <div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-2 z-20">
+                                <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
+                                나 (<span class="daily-time-display">00:00:00</span>)
+                            </div>
+                        </div>
+                        <div id="other-users-grid" class="contents"></div>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/3 flex flex-col gap-6">
+                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">

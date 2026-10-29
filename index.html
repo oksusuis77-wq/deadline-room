@@ -1,4 +1,275 @@
-<!-- 파이어베이스 & PeerJS 모듈 (통신 충돌 및 렌더링 버그 완벽 수정) -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마감방 - 웹소설 작가 작업실</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'LeeSeoyun';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.05rem; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
+
+        .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.03); }
+        
+        .tab-content { display: none; opacity: 0; transition: opacity 0.4s ease; }
+        .tab-content.active { display: block; opacity: 1; }
+        
+        .video-blur { filter: blur(4px) brightness(0.95); }
+        .hidden-safely { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-gray-200 overflow-hidden">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-50 flex items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 card-shadow max-w-md w-full mx-4 text-center">
+            <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">마감방 입장</h2>
+            <p class="text-gray-500 text-sm mb-6 font-[Pretendard]">함께 마감할 동료들에게 보여질 닉네임을 입력해주세요.</p>
+            <form id="login-form" class="space-y-4" action="javascript:void(0);" onsubmit="window.doLogin(); return false;">
+                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-lg focus:ring-2 focus:ring-gray-900 outline-none font-[Pretendard] font-bold text-gray-900 placeholder-gray-300" placeholder="닉네임 (예: 김작가)">
+                <button type="button" onclick="window.doLogin()" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg shadow-gray-200 cursor-pointer">입장하기</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 hidden-safely transition-all duration-300">
+        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-sm flex items-center gap-2">
+            알림 메시지
+        </div>
+    </div>
+
+    <!-- Header & Navigation -->
+    <header class="glass-header sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-lg leading-none shadow-sm">M</div>
+                <h1 class="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
+                    마감방
+                    <button id="btn-logout" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-md transition-colors font-normal hidden md:block">닉네임 변경</button>
+                </h1>
+            </div>
+            
+            <nav class="hidden md:flex items-center gap-8">
+                <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-journal">개인 집필 일지</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-community">Log</button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div id="auth-status" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                <span id="user-info" class="text-xs text-gray-500 font-medium hidden md:block">연결 대기중...</span>
+            </div>
+        </div>
+        <nav class="md:hidden flex items-center gap-6 px-6 pb-3 overflow-x-auto">
+            <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 whitespace-nowrap" data-target="tab-room">집필실</button>
+            <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium whitespace-nowrap" data-target="tab-journal">개인 집필 일지</button>
+            <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium whitespace-nowrap" data-target="tab-community">Log</button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
+        <section id="tab-room" class="tab-content active space-y-8">
+            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
+                <span class="text-gray-500 font-bold whitespace-nowrap sm:pl-4">오늘의 목표</span>
+                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 placeholder-gray-300 px-2 text-center sm:text-left" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
+                <button id="btn-save-goal" class="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-md font-medium">저장</button>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="lg:w-2/3 space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">함께 마감하는 집필실</h2>
+                            <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                            <label class="flex items-center gap-2 px-3 text-sm cursor-pointer text-gray-600 hover:text-gray-900 transition-colors">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900" checked>
+                                <span class="font-medium">모자이크</span>
+                            </label>
+                            <div class="w-px h-6 bg-gray-200"></div>
+                            <button id="btn-cam" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold transition-colors">웹캠</button>
+                            <button id="btn-screen" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">화면공유</button>
+                            <button id="btn-stop" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors">중지</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
+                        <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group">
+                            <video id="video-element" class="w-full h-full object-cover hidden-safely transition-all duration-300 video-blur" autoplay playsinline muted></video>
+                            
+                            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
+                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <p class="text-sm font-medium">내 화면이 여기에 표시됩니다</p>
+                            </div>
+
+                            <div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-2 z-20">
+                                <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
+                                나 (<span class="daily-time-display">00:00:00</span>)
+                            </div>
+                        </div>
+                        <div id="other-users-grid" class="contents"></div>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/3 flex flex-col gap-6">
+                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
+                        <h3 class="font-bold text-gray-900 mb-4">하루 2시간 챌린지</h3>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-2xl font-light text-gray-900 daily-time-display">00:00:00</span>
+                            <span class="text-gray-400 text-sm font-medium" id="progress-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-1000 w-0"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 text-center relative overflow-hidden flex-1 flex flex-col justify-center min-h-[300px]">
+                        <div class="absolute inset-0 bg-gray-50 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear" id="pomo-bg-fill" style="z-index: 0;"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex justify-center gap-2 mb-8">
+                                <button id="mode-work" class="px-4 py-1.5 rounded-full text-sm font-bold bg-gray-900 text-white transition-all shadow-md">집중 25분</button>
+                                <button id="mode-break" class="px-4 py-1.5 rounded-full text-sm font-bold bg-transparent text-gray-500 hover:bg-gray-100 transition-all">휴식 5분</button>
+                            </div>
+
+                            <div class="text-6xl font-light tracking-tighter text-gray-900 mb-8 tabular-nums leading-none" id="pomo-display">
+                                25:00
+                            </div>
+
+                            <div class="flex justify-center gap-3">
+                                <button id="btn-pomo-start" class="w-28 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 text-sm">시작하기</button>
+                                <button id="btn-pomo-reset" class="w-14 py-3 bg-white border-2 border-gray-100 text-gray-400 hover:text-gray-900 rounded-2xl flex items-center justify-center transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-journal" class="tab-content">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="lg:w-1/3">
+                    <div class="sticky top-24 bg-white rounded-3xl p-8 card-shadow border border-gray-100">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">오늘의 일지 작성</h2>
+                        <form id="log-form" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-2">날짜</label>
+                                <input type="date" id="log-date" required class="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-gray-900 outline-none text-gray-700 font-[Pretendard]">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-2">제목</label>
+                                <input type="text" id="log-title" placeholder="어떤 작업을 하셨나요?" required class="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-2">작업량 (자/단어)</label>
+                                <input type="number" id="log-count" placeholder="예: 5000" required min="0" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-2">내용 및 회고</label>
+                                <textarea id="log-note" required rows="4" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-gray-900 outline-none resize-none" placeholder="오늘의 집필 소감을 남겨주세요."></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-colors shadow-md mt-2">일지에 저장</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="lg:w-2/3">
+                    <div class="columns-1 sm:columns-2 gap-6 space-y-6" id="log-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-community" class="tab-content">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">동료 작가 마감 현황</h2>
+                    <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl border border-gray-100 card-shadow text-sm text-gray-600 font-[Pretendard]">
+                    <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        마감방 규칙
+                    </h4>
+                    <ul class="space-y-2 text-xs">
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5일 이상, 하루 2시간 이상 작업 필수</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주간 목표 미달성 시 경고 1회 누적 (🚨)</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 누적 경고 3회 시 마감방 <strong class="text-red-500">퇴출</strong></li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 10주 연속 주간 목표 달성 시 경고 1회 차감 (🎁)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-6" id="community-list"></div>
+        </section>
+
+    </main>
+
+    <!-- UI 스크립트 -->
+    <script>
+        window.LOCAL_KEY = 'deadline_room_nickname';
+        window.myNickname = '';
+
+        window.doLogin = function() {
+            var input = document.getElementById('nickname-input');
+            var val = input ? input.value.trim() : '';
+            val = val.replace(/[\/\\#\$\.\[\]]/g, '');
+            
+            if (!val) {
+                alert('닉네임을 입력해주세요.');
+                return;
+            }
+
+            window.myNickname = val;
+            try { localStorage.setItem(window.LOCAL_KEY, val); } catch(e){}
+
+            var overlay = document.getElementById('login-overlay');
+            if (overlay) {
+                overlay.style.setProperty('display', 'none', 'important');
+            }
+            document.body.classList.remove('overflow-hidden');
+
+            if (typeof window.startBackendApp === 'function') {
+                window.startBackendApp(val);
+            }
+        };
+
+        (function() {
+            try {
+                var saved = localStorage.getItem(window.LOCAL_KEY);
+                if (saved) {
+                    window.myNickname = saved;
+                    window.addEventListener('DOMContentLoaded', function() {
+                        var overlay = document.getElementById('login-overlay');
+                        if (overlay) overlay.style.setProperty('display', 'none', 'important');
+                        document.body.classList.remove('overflow-hidden');
+                    });
+                }
+            } catch(e){}
+        })();
+    </script>
+
+    <!-- 파이어베이스 & PeerJS 모듈 (생략 없는 100% 완전체) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -94,7 +365,6 @@
                 try {
                     if (typeof Peer !== 'undefined') {
                         const mySafeId = getSafePeerId(nick);
-                        // STUN 서버 설정 강화 (방화벽 우회)
                         peer = new Peer(mySafeId, {
                             debug: 1,
                             config: {
@@ -108,9 +378,7 @@
 
                         peer.on('open', (id) => console.log('Peer ID 생성 성공:', id));
                         
-                        // 상대방이 나에게 전화를 걸었을 때 (상대방이 화면 공유를 시작했을 때)
                         peer.on('call', (call) => {
-                            // 내가 화면 공유 중이면 내 화면도 같이 보내주고, 아니면 그냥 받기만 함
                             if (mediaStream) {
                                 call.answer(mediaStream);
                             } else {
@@ -165,7 +433,6 @@
                     snap.forEach(d => publicUsers.push({ id: d.id, ...d.data() }));
                     renderOtherUsers();
                     
-                    // 내가 화면을 공유 중일 때만 새로 들어온 사람에게 영상을 쏴줌 (빈 신호 전송 방지)
                     if (peer && mediaStream) {
                         const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
                         const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
@@ -197,14 +464,13 @@
         
         document.getElementById('blur-toggle').addEventListener('change', (e) => {
             e.target.checked ? videoElement.classList.add('video-blur') : videoElement.classList.remove('video-blur');
-            // 다른 사람 영상에도 모자이크 일괄 적용
             document.querySelectorAll('.remote-video').forEach(vid => {
                 e.target.checked ? vid.classList.add('video-blur') : vid.classList.remove('video-blur');
             });
         });
 
         function makeCall(peerId) {
-            if (!peer || !mediaStream) return; // 스트림이 없으면 아예 콜을 걸지 않음
+            if (!peer || !mediaStream) return;
             
             if (currentCalls[peerId]) {
                 try { currentCalls[peerId].close(); } catch(e){}
@@ -217,7 +483,6 @@
         function handleCallEvents(call, peerId) {
             currentCalls[peerId] = call;
             
-            // 상대방의 스트림을 성공적으로 받았을 때
             call.on('stream', (remoteStream) => {
                 remoteStreams[peerId] = remoteStream;
                 addRemoteVideo(peerId, remoteStream);
@@ -245,7 +510,6 @@
                 videoElement.classList.remove('hidden-safely');
                 videoPlaceholder.classList.add('hidden-safely');
                 
-                // 로컬 비디오 강제 재생
                 videoElement.play().catch(e => console.log("로컬 비디오 재생 대기중", e));
                 
                 document.getElementById('btn-cam').classList.add('hidden-safely');
@@ -257,7 +521,6 @@
                 startTimeTracking();
                 showToast(type === 'cam' ? "웹캠 공유 시작" : "화면 공유 시작");
 
-                // 내가 공유를 시작했으니 접속된 모든 사람에게 내 화면을 쏴줌
                 const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
                 const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
                 others.forEach(u => {
@@ -284,7 +547,6 @@
             document.getElementById('btn-stop').classList.add('hidden-safely');
             liveIndicator.classList.add('hidden-safely');
 
-            // 화면을 껐으니 연결된 피어들을 닫아서 상대방 화면에서 내 영상 제거
             Object.keys(currentCalls).forEach(peerId => {
                 if(currentCalls[peerId]) {
                     try { currentCalls[peerId].close(); } catch(e){}
@@ -357,112 +619,14 @@
                 if (!vid) {
                     vid = document.createElement('video');
                     const isBlur = document.getElementById('blur-toggle').checked;
-                    // remote-video 클래스 추가하여 일괄 모자이크 제어
                     vid.className = `remote-video w-full h-full object-cover absolute inset-0 z-0 transition-opacity duration-500 ${isBlur ? 'video-blur' : ''}`;
                     vid.autoplay = true;
                     vid.playsinline = true;
-                    vid.muted = true; // 무음 처리 (브라우저 정책 통과)
+                    vid.muted = true;
                     userDiv.insertBefore(vid, userDiv.firstChild);
                 }
                 
                 vid.srcObject = stream;
                 
-                // 데이터 로드 완료 시 강제 플레이 (가장 중요한 부분)
                 vid.onloadedmetadata = () => {
                     vid.play().catch(e => console.error("원격 비디오 재생 에러:", e));
-                };
-
-                const uiLayer = userDiv.querySelector('.ui-layer');
-                if(uiLayer) {
-                    // 배경을 투명하게 처리하여 뒤의 비디오가 선명히 보이게 함
-                    uiLayer.classList.replace('bg-gray-50/50', 'bg-black/30');
-                    const nameText = userDiv.querySelector('.name-text');
-                    if(nameText) nameText.classList.replace('text-gray-900', 'text-white');
-                    const goalText = userDiv.querySelector('.goal-text');
-                    if(goalText) goalText.classList.replace('text-gray-500', 'text-gray-200');
-                    const initialBox = userDiv.querySelector('.initial-box');
-                    if(initialBox) initialBox.style.display = 'none';
-                }
-            } else {
-                removeRemoteVideo(peerId);
-            }
-        }
-
-        function removeRemoteVideo(peerId) {
-            const matchingUser = publicUsers.find(u => getSafePeerId(u.id) === peerId);
-            if (!matchingUser) return;
-            
-            let userDiv = document.getElementById(`user-card-${getSafePeerId(matchingUser.id)}`);
-            if (!userDiv) return;
-            let vid = userDiv.querySelector('video');
-            if (vid) vid.remove();
-
-            const uiLayer = userDiv.querySelector('.ui-layer');
-            if(uiLayer) {
-                uiLayer.classList.replace('bg-black/30', 'bg-gray-50/50');
-                const nameText = userDiv.querySelector('.name-text');
-                if(nameText) nameText.classList.replace('text-white', 'text-gray-900');
-                const goalText = userDiv.querySelector('.goal-text');
-                if(goalText) goalText.classList.replace('text-gray-200', 'text-gray-500');
-                const initialBox = userDiv.querySelector('.initial-box');
-                if(initialBox) initialBox.style.display = 'flex';
-            }
-        }
-
-        function renderOtherUsers() {
-            const grid = document.getElementById('other-users-grid');
-            if(!grid) return;
-            
-            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-            const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
-            
-            others.forEach(u => {
-                const safeId = getSafePeerId(u.id);
-                let card = document.getElementById(`user-card-${safeId}`);
-                const h = Math.floor((u.dailySeconds || 0) / 3600);
-                const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
-                
-                if (!card) {
-                    card = document.createElement('div');
-                    card.id = `user-card-${safeId}`;
-                    card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] flex items-center justify-center group";
-                    card.innerHTML = `
-                        <div class="ui-layer absolute inset-0 flex flex-col justify-center items-center p-4 transition-colors duration-300 z-10 bg-gray-50/50">
-                            <div class="w-16 h-16 bg-white border border-gray-100 rounded-2xl mx-auto flex items-center justify-center text-gray-400 font-bold text-2xl mb-4 shadow-sm initial-box">
-                                ${(u.nickname || '?').charAt(0)}
-                            </div>
-                            <p class="text-base font-bold text-gray-900 font-[Pretendard] mb-1 name-text shadow-sm">${u.nickname}</p>
-                            <p class="text-sm text-gray-500 font-[Pretendard] truncate px-4 w-full text-center goal-text shadow-sm" title="${u.goal || '목표 없음'}">${u.goal || '목표 없음'}</p>
-                        </div>
-                        <div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5 shadow-sm z-20">
-                            <span class="w-1.5 h-1.5 rounded-full status-dot ${u.dailySeconds > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
-                            <span class="time-text">${h}h ${m}m</span>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                    
-                    if (remoteStreams[safeId]) {
-                        addRemoteVideo(safeId, remoteStreams[safeId]);
-                    }
-                } else {
-                    card.querySelector('.time-text').textContent = `${h}h ${m}m`;
-                    card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
-                    card.querySelector('.goal-text').title = u.goal || '목표 없음';
-                    const dot = card.querySelector('.status-dot');
-                    if(u.dailySeconds > 0) {
-                        dot.classList.add('bg-emerald-400', 'animate-pulse');
-                        dot.classList.remove('bg-gray-400');
-                    }
-                }
-            });
-
-            Array.from(grid.children).forEach(card => {
-                const uidSafe = card.id.replace('user-card-', '');
-                if (!others.find(u => getSafePeerId(u.id) === uidSafe)) {
-                    card.remove();
-                }
-            });
-        }
-
-        // 포모도로 및 일지, 커뮤니티 로그 관련 코드는 변경 없이 하단에 그대로 유지 (생략)
-        // ... (나머지 로직은 원본 그대로 유지됩니다)

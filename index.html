@@ -225,7 +225,7 @@
 
     </main>
 
-    <!-- UI 독립 동작 보장 스크립트 -->
+    <!-- UI 스크립트 -->
     <script>
         window.LOCAL_KEY = 'deadline_room_nickname';
         window.myNickname = '';
@@ -254,7 +254,6 @@
             }
         };
 
-        // 자동 로그인 확인
         (function() {
             try {
                 var saved = localStorage.getItem(window.LOCAL_KEY);
@@ -270,7 +269,7 @@
         })();
     </script>
 
-    <!-- 파이어베이스 모듈 스크립트 -->
+    <!-- 파이어베이스 & PeerJS 모듈 (실시간 화면 연결 완전 개선) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -363,15 +362,30 @@
                 const logDateEl = document.getElementById('log-date');
                 if(logDateEl) logDateEl.valueAsDate = new Date();
                 
+                // PeerJS 초기화 및 수신(Call) 대기
                 try {
                     if (typeof Peer !== 'undefined') {
-                        peer = new Peer(nick);
-                        peer.on('open', (id) => console.log('PeerJS 연결 성공:', id));
+                        // 특수문자 제거한 ID 사용
+                        const cleanPeerId = nick.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        peer = new Peer(cleanPeerId, {
+                            debug: 1,
+                            config: {
+                                iceServers: [
+                                    { urls: 'stun:stun.l.google.com:19302' },
+                                    { urls: 'stun:stun1.l.google.com:19302' }
+                                ]
+                            }
+                        });
+
+                        peer.on('open', (id) => console.log('PeerJS ID 생성 완료:', id));
+                        
                         peer.on('call', (call) => {
+                            // 상대방이 먼저 전화(화면요청)를 걸어왔을 때 응답
                             call.answer(mediaStream || undefined);
                             handleCallEvents(call, call.peer);
                         });
-                        peer.on('error', (err) => console.warn('PeerJS 알림:', err));
+                        
+                        peer.on('error', (err) => console.warn('PeerJS 연결 알림:', err));
                     }
                 } catch(pe) { console.warn("PeerJS 오류 무시:", pe); }
 
@@ -418,10 +432,15 @@
                     renderOtherUsers();
                     
                     const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-                    if (mediaStream && peer) {
+                    
+                    // 접속한 유저들에게 시그널링 오퍼 발송
+                    if (peer) {
                         const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
                         others.forEach(u => {
-                            if (!currentCalls[u.id]) makeCall(u.id);
+                            const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+                            if (!currentCalls[cleanOtherId]) {
+                                makeCall(cleanOtherId);
+                            }
                         });
                     }
                     
@@ -448,26 +467,30 @@
         });
 
         function makeCall(peerId) {
-            if (!mediaStream || !peer) return;
-            if (currentCalls[peerId]) currentCalls[peerId].close();
-            const call = peer.call(peerId, mediaStream);
+            if (!peer) return;
+            if (currentCalls[peerId]) {
+                try { currentCalls[peerId].close(); } catch(e){}
+            }
+            const call = peer.call(peerId, mediaStream || new MediaStream());
             if(call) handleCallEvents(call, peerId);
         }
 
         function handleCallEvents(call, peerId) {
             currentCalls[peerId] = call;
+            
             call.on('stream', (remoteStream) => {
-                if (call.streamId === remoteStream.id) return;
-                call.streamId = remoteStream.id;
+                // 수신한 영상 스트림을 메모리에 저장 및 DOM에 할당
                 remoteStreams[peerId] = remoteStream;
                 addRemoteVideo(peerId, remoteStream);
             });
+            
             call.on('close', () => {
                 delete currentCalls[peerId];
                 delete remoteStreams[peerId];
                 removeRemoteVideo(peerId);
             });
-            call.on('error', (err) => console.error(err));
+            
+            call.on('error', (err) => console.error('Call Error:', err));
         }
 
         async function startStream(type) {
@@ -492,12 +515,16 @@
                 startTimeTracking();
                 showToast(type === 'cam' ? "웹캠 공유 시작" : "화면 공유 시작");
 
+                // 내 화면 공유가 시작되었음을 동료 유저들에게 다시 브로드캐스팅
                 const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
                 const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
-                others.forEach(u => makeCall(u.id));
+                others.forEach(u => {
+                    const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+                    makeCall(cleanOtherId);
+                });
 
             } catch (err) {
-                showToast("권한이 거부되었거나 장치가 없습니다.");
+                showToast("권한이 거부되었거나 공유 장치가 없습니다.");
             }
         }
 
@@ -515,8 +542,13 @@
             document.getElementById('btn-stop').classList.add('hidden-safely');
             liveIndicator.classList.add('hidden-safely');
 
-            Object.values(currentCalls).forEach(call => call.close());
-            currentCalls = {};
+            // 화면 공유 중지 시 상대방들에게 빈 스트림 재전송
+            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
+            const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
+            others.forEach(u => {
+                const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+                makeCall(cleanOtherId);
+            });
 
             stopTimeTracking();
         }
@@ -569,18 +601,29 @@
             showToast("오늘의 목표가 저장되었습니다.");
         });
 
+        // 상대방 영상 엘리먼트 동적 바인딩 함수
         function addRemoteVideo(peerId, stream) {
-            let userDiv = document.getElementById(`user-card-${peerId}`);
+            // 유저 아이디 기반 카드 찾기
+            const matchingUser = publicUsers.find(u => u.id.replace(/[^a-zA-Z0-9_-]/g, '_') === peerId);
+            const rawId = matchingUser ? matchingUser.id : peerId;
+
+            let userDiv = document.getElementById(`user-card-${rawId}`);
             if (!userDiv) return;
 
+            // 유효한 비디오 트랙이 있는지 검증
+            const hasVideoTrack = stream && stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
+            
             let vid = userDiv.querySelector('video');
-            if (!vid) {
-                vid = document.createElement('video');
-                vid.className = 'w-full h-full object-cover absolute inset-0 z-0 transition-opacity duration-500';
-                vid.autoplay = true;
-                vid.playsinline = true;
-                userDiv.insertBefore(vid, userDiv.firstChild);
-                
+            if (hasVideoTrack) {
+                if (!vid) {
+                    vid = document.createElement('video');
+                    vid.className = 'w-full h-full object-cover absolute inset-0 z-0 transition-opacity duration-500';
+                    vid.autoplay = true;
+                    vid.playsinline = true;
+                    userDiv.insertBefore(vid, userDiv.firstChild);
+                }
+                vid.srcObject = stream;
+
                 const uiLayer = userDiv.querySelector('.ui-layer');
                 if(uiLayer) {
                     uiLayer.classList.replace('bg-gray-50/50', 'bg-black/60');
@@ -591,12 +634,13 @@
                     const initialBox = userDiv.querySelector('.initial-box');
                     if(initialBox) initialBox.style.display = 'none';
                 }
+            } else {
+                removeRemoteVideo(rawId);
             }
-            vid.srcObject = stream;
         }
 
-        function removeRemoteVideo(peerId) {
-            let userDiv = document.getElementById(`user-card-${peerId}`);
+        function removeRemoteVideo(rawId) {
+            let userDiv = document.getElementById(`user-card-${rawId}`);
             if (!userDiv) return;
             let vid = userDiv.querySelector('video');
             if (vid) vid.remove();
@@ -644,8 +688,9 @@
                     `;
                     grid.appendChild(card);
                     
-                    if (remoteStreams[u.id]) {
-                        addRemoteVideo(u.id, remoteStreams[u.id]);
+                    const cleanOtherId = u.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+                    if (remoteStreams[cleanOtherId]) {
+                        addRemoteVideo(cleanOtherId, remoteStreams[cleanOtherId]);
                     }
                 } else {
                     card.querySelector('.time-text').textContent = `${h}h ${m}m`;

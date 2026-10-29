@@ -11,72 +11,101 @@
             font-family: 'LeeSeoyun';
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
         }
-        body { font-family: 'LeeSeoyun', sans-serif; background-color: #FAFAFA; color: #111827; }
+        body { font-family: 'LeeSeoyun', sans-serif; background-color: #F9FAFB; color: #111827; }
         .hidden-safely { display: none !important; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .video-blur { filter: blur(6px); }
+        .video-blur { filter: blur(8px); }
+        .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col overflow-hidden">
 
-    <!-- 로그인 오버레이 -->
-    <div id="login-overlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
-        <div class="text-center p-8 border rounded-3xl shadow-xl bg-white max-w-sm w-full">
-            <h2 class="text-2xl font-bold mb-4">마감방 입장</h2>
-            <form onsubmit="window.doLogin(); return false;">
-                <input type="text" id="nickname-input" required class="w-full border p-3 rounded-xl mb-4 text-center" placeholder="닉네임 입력">
-                <button type="submit" class="w-full bg-gray-900 text-white p-3 rounded-xl font-bold">입장하기</button>
+    <!-- 로그인 오버레이 (새로고침 완벽 차단 적용) -->
+    <div id="login-overlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 card-shadow max-w-sm w-full mx-4 text-center border border-gray-100">
+            <h2 class="text-2xl font-bold mb-6 text-gray-900">마감방 입장</h2>
+            <form id="login-form">
+                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-center text-lg focus:ring-2 focus:ring-gray-900 outline-none transition-all" placeholder="닉네임 입력">
+                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-bold text-lg transition-colors">입장하기</button>
             </form>
         </div>
     </div>
 
     <!-- 헤더 -->
-    <header class="bg-white border-b sticky top-0 z-40 p-4 flex justify-between items-center shadow-sm">
-        <h1 class="font-bold text-lg">마감방</h1>
-        <div class="flex items-center gap-3">
-            <span id="user-info" class="text-sm font-bold text-gray-600">대기중...</span>
+    <header class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 p-4 shadow-sm">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="font-bold text-xl text-gray-900">마감방 <span class="text-sm font-normal text-gray-500 ml-2">서로의 마감을 응원합니다</span></h1>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></div>
+                <span id="user-info" class="text-sm font-bold text-gray-600">대기중...</span>
+            </div>
         </div>
     </header>
 
-    <main class="p-6 max-w-6xl mx-auto w-full">
-        <!-- 상단 컨트롤러 -->
-        <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4">
-                <label class="flex items-center gap-2 cursor-pointer font-bold">
-                    <input type="checkbox" id="blur-toggle" checked class="w-5 h-5"> 모자이크
+    <main class="p-4 md:p-6 max-w-6xl mx-auto w-full flex flex-col lg:flex-row gap-6">
+        
+        <!-- 왼쪽: 화면 공유 영역 -->
+        <div class="lg:w-2/3 flex flex-col gap-4">
+            <!-- 상단 컨트롤러 -->
+            <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 card-shadow">
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-gray-700 hover:text-gray-900 transition-colors">
+                    <input type="checkbox" id="blur-toggle" checked class="w-4 h-4 rounded text-gray-900 focus:ring-gray-900"> 모자이크
                 </label>
+                <div class="flex gap-2">
+                    <button id="btn-cam" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-xl font-bold text-sm transition-colors">웹캠 켜기</button>
+                    <button id="btn-screen" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors">화면 공유</button>
+                    <button id="btn-stop" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-xl font-bold text-sm transition-colors hidden-safely">공유 중지</button>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <button id="btn-cam" class="bg-gray-200 px-4 py-2 rounded-xl font-bold">웹캠 공유</button>
-                <button id="btn-screen" class="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold">화면 공유</button>
-                <button id="btn-stop" class="bg-red-100 text-red-600 px-4 py-2 rounded-xl font-bold hidden-safely">공유 중지</button>
+
+            <!-- 비디오 그리드 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="video-grid">
+                <!-- 내 화면 -->
+                <div class="bg-white rounded-3xl overflow-hidden aspect-[4/3] relative border border-gray-100 card-shadow group flex items-center justify-center">
+                    <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-10" autoplay playsinline muted></video>
+                    
+                    <div id="video-placeholder" class="z-0 flex flex-col items-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold text-xl mb-2">나</div>
+                        <span class="text-sm font-bold text-gray-400">내 화면 대기중</span>
+                    </div>
+                    
+                    <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold z-20 flex items-center gap-2">
+                        <span id="live-dot" class="w-1.5 h-1.5 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
+                        나 (<span class="daily-time-display">00:00:00</span>)
+                    </div>
+                </div>
+                
+                <!-- 다른 사람 화면 (스크립트가 여기에 자동 렌더링) -->
+                <div id="other-users-grid" class="contents"></div>
             </div>
         </div>
 
-        <!-- 비디오 그리드 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="video-grid">
-            <!-- 내 화면 -->
-            <div class="bg-gray-100 rounded-3xl overflow-hidden aspect-[4/3] relative border-2 border-gray-200">
-                <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-10" autoplay playsinline muted></video>
-                <div id="video-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-400 font-bold z-0">
-                    내 화면
+        <!-- 오른쪽: 챌린지 및 타이머 영역 -->
+        <div class="lg:w-1/3 flex flex-col gap-4">
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 card-shadow">
+                <h3 class="font-bold text-gray-900 mb-4">하루 2시간 챌린지</h3>
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-3xl font-light text-gray-900 daily-time-display">00:00:00</span>
+                    <span class="text-gray-400 text-sm font-bold" id="progress-percent">0%</span>
                 </div>
-                <div class="absolute top-3 left-3 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-bold z-20">
-                    나 (<span class="daily-time-display">00:00:00</span>)
+                <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-500 w-0"></div>
                 </div>
             </div>
-            
-            <!-- 다른 사람 화면 (여기에 자동 생성됨) -->
-            <div id="other-users-grid" class="contents"></div>
         </div>
     </main>
 
-    <!-- 스크립트 -->
+    <!-- 스크립트: UI 동작 및 Firebase/PeerJS 연동 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, updateDoc, onSnapshot, query, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, updateDoc, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 1. 로그인 폼 새로고침 완벽 차단 (이벤트 리스너 방식)
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault(); // 폼 전송에 의한 새로고침 차단
+            const nick = document.getElementById('nickname-input').value.trim();
+            if(nick) startApp(nick);
+        });
 
         const firebaseConfig = {
           apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4",
@@ -84,58 +113,61 @@
           projectId: "deadline-room-768bf"
         };
         
-        let app = initializeApp(firebaseConfig);
-        let auth = getAuth(app);
-        let db = getFirestore(app);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         
         let peer = null;
         let isPeerReady = false;
         let currentCalls = {};
         let publicUsers = [];
         let mediaStream = null;
+        
         let dailySharedSeconds = 0;
+        const GOAL_SECONDS = 2 * 60 * 60; // 2시간
         let sharingInterval = null;
-        let lastTick = null;
+        let lastTick = null; // 탭 이동시 절대시간 측정용
 
-        window.doLogin = async () => {
-            const nick = document.getElementById('nickname-input').value.trim();
-            if(!nick) return;
+        // 로컬 스토리지에 닉네임이 있으면 자동 시작
+        const savedNick = localStorage.getItem('deadline_nickname');
+        if(savedNick) {
+            document.getElementById('nickname-input').value = savedNick;
+            startApp(savedNick);
+        }
+
+        async function startApp(nick) {
             localStorage.setItem('deadline_nickname', nick);
-            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('login-overlay').style.setProperty('display', 'none', 'important');
             document.body.classList.remove('overflow-hidden');
             
-            await signInAnonymously(auth);
-            document.getElementById('user-info').textContent = `${nick} (온라인)`;
-            
-            initWebRTC(nick);
-            initDB(nick);
-        };
-
-        if(localStorage.getItem('deadline_nickname')) {
-            window.doLogin = () => {};
-            const nick = localStorage.getItem('deadline_nickname');
-            document.getElementById('nickname-input').value = nick;
-            document.getElementById('login-overlay').style.display = 'none';
-            document.body.classList.remove('overflow-hidden');
-            signInAnonymously(auth).then(() => {
-                document.getElementById('user-info').textContent = `${nick} (온라인)`;
-                initWebRTC(nick);
+            try {
+                await signInAnonymously(auth);
+                document.getElementById('user-info').textContent = `${nick}`;
+                document.getElementById('status-dot').classList.replace('bg-yellow-400', 'bg-emerald-500');
+                
                 initDB(nick);
-            });
+                initWebRTC(nick);
+            } catch(e) {
+                console.error("로그인 에러:", e);
+                alert("서버 연결에 실패했습니다. 다시 시도해주세요.");
+            }
         }
 
         function initWebRTC(nick) {
-            peer = new Peer('peer_' + encodeURIComponent(nick).replace(/%/g, '_'), {
+            const safeId = 'peer_' + encodeURIComponent(nick).replace(/%/g, '_');
+            peer = new Peer(safeId, {
                 config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
             });
+            
             peer.on('open', () => {
                 isPeerReady = true;
                 checkAndCallOthers();
             });
+            
             peer.on('call', (call) => {
                 call.answer(mediaStream || undefined);
                 currentCalls[call.peer] = call;
-                call.on('stream', (stream) => addRemoteVideo(call.peer, stream));
+                call.on('stream', (stream) => renderRemoteVideo(call.peer, stream));
             });
         }
 
@@ -159,13 +191,15 @@
         function checkAndCallOthers() {
             if(!isPeerReady || !peer) return;
             const myNick = localStorage.getItem('deadline_nickname');
+            
             publicUsers.filter(u => u.id !== myNick && u.isOnline).forEach(u => {
                 const pId = 'peer_' + encodeURIComponent(u.id).replace(/%/g, '_');
+                // 상대가 화면을 켰거나 내가 화면을 켰을 때 연결 시도
                 if((u.isSharing || mediaStream) && !currentCalls[pId]) {
                     const call = mediaStream ? peer.call(pId, mediaStream) : peer.call(pId);
                     if(call) {
                         currentCalls[pId] = call;
-                        call.on('stream', (stream) => addRemoteVideo(pId, stream));
+                        call.on('stream', (stream) => renderRemoteVideo(pId, stream));
                     }
                 }
             });
@@ -175,29 +209,38 @@
             if(mediaStream) stopStream();
             try {
                 mediaStream = await (type === 'cam' ? navigator.mediaDevices.getUserMedia({video:true}) : navigator.mediaDevices.getDisplayMedia({video:true}));
-                document.getElementById('video-element').srcObject = mediaStream;
-                document.getElementById('video-element').classList.remove('hidden-safely');
+                
+                const vidEl = document.getElementById('video-element');
+                vidEl.srcObject = mediaStream;
+                vidEl.classList.remove('hidden-safely');
+                document.getElementById('video-placeholder').classList.add('hidden-safely');
                 
                 document.getElementById('btn-cam').classList.add('hidden-safely');
                 document.getElementById('btn-screen').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely');
+                document.getElementById('live-dot').classList.remove('hidden-safely');
                 
                 updateDBSharing(true);
                 startTimer();
                 checkAndCallOthers();
                 
                 mediaStream.getVideoTracks()[0].onended = stopStream;
-            } catch(e) { alert("화면 권한이 없습니다."); }
+            } catch(e) { 
+                console.warn(e);
+            }
         }
 
         function stopStream() {
             if(mediaStream) mediaStream.getTracks().forEach(t => t.stop());
             mediaStream = null;
+            
             document.getElementById('video-element').classList.add('hidden-safely');
+            document.getElementById('video-placeholder').classList.remove('hidden-safely');
             
             document.getElementById('btn-cam').classList.remove('hidden-safely');
             document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
+            document.getElementById('live-dot').classList.add('hidden-safely');
             
             updateDBSharing(false);
             stopTimer();
@@ -210,16 +253,131 @@
             if(nick) updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { isSharing });
         }
 
-        document.getElementById('btn-cam').onclick = () => startStream('cam');
-        document.getElementById('btn-screen').onclick = () => startStream('screen');
-        document.getElementById('btn-stop').onclick = stopStream;
+        document.getElementById('btn-cam').addEventListener('click', () => startStream('cam'));
+        document.getElementById('btn-screen').addEventListener('click', () => startStream('screen'));
+        document.getElementById('btn-stop').addEventListener('click', stopStream);
         
-        document.getElementById('blur-toggle').onchange = (e) => {
+        document.getElementById('blur-toggle').addEventListener('change', (e) => {
             const isBlur = e.target.checked;
             document.getElementById('video-element').classList.toggle('video-blur', isBlur);
             document.querySelectorAll('.remote-video').forEach(v => v.classList.toggle('video-blur', isBlur));
-        };
+        });
 
+        // 상대방 카드 렌더링 (UI 껍데기 생성)
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const myNick = localStorage.
+            const myNick = localStorage.getItem('deadline_nickname');
+            const others = publicUsers.filter(u => u.id !== myNick && u.isOnline);
+            
+            others.forEach(u => {
+                let card = document.getElementById(`user-${u.id}`);
+                const h = String(Math.floor((u.dailySeconds || 0) / 3600)).padStart(2, '0');
+                const m = String(Math.floor(((u.dailySeconds || 0) % 3600) / 60)).padStart(2, '0');
+                
+                if(!card) {
+                    card = document.createElement('div');
+                    card.id = `user-${u.id}`;
+                    card.className = "bg-white rounded-3xl overflow-hidden aspect-[4/3] relative border border-gray-100 card-shadow flex items-center justify-center";
+                    // 기본 UI (영상 없을 때 표시됨)
+                    card.innerHTML = `
+                        <div class="ui-layer z-0 flex flex-col items-center">
+                            <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold text-xl mb-2">${u.id.charAt(0)}</div>
+                            <span class="text-sm font-bold text-gray-900">${u.id}</span>
+                        </div>
+                        <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold z-20 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
+                            ${u.id} (<span class="remote-time">${h}:${m}</span>)
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                } else {
+                    card.querySelector('.remote-time').textContent = `${h}:${m}`;
+                    const dot = card.querySelector('.rounded-full.w-1\\.5');
+                    if(dot) {
+                        dot.className = `w-1.5 h-1.5 rounded-full ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
+                    }
+                }
+            });
+            
+            // 나간 유저 카드 삭제
+            Array.from(grid.children).forEach(c => {
+                if(!others.find(u => `user-${u.id}` === c.id)) c.remove();
+            });
+        }
+
+        // 상대방 영상 도착 시 무조건 최상단(z-10)으로 덮어씌움
+        function renderRemoteVideo(peerId, stream) {
+            if(!stream || stream.getVideoTracks().length === 0) return;
+            const targetUser = publicUsers.find(u => 'peer_' + encodeURIComponent(u.id).replace(/%/g, '_') === peerId);
+            if(!targetUser) return;
+            
+            const userCard = document.getElementById(`user-${targetUser.id}`);
+            if(!userCard) return;
+            
+            const uiLayer = userCard.querySelector('.ui-layer');
+            if(uiLayer) uiLayer.style.display = 'none'; // 기본 회색 아이콘 숨김
+
+            let vid = userCard.querySelector('video.remote-video');
+            if(!vid) {
+                vid = document.createElement('video');
+                const isBlur = document.getElementById('blur-toggle').checked;
+                // absolute와 z-10으로 카드를 꽉 채우고 최상단 배치
+                vid.className = `remote-video absolute inset-0 w-full h-full object-cover z-10 transition-all ${isBlur ? 'video-blur' : ''}`;
+                vid.autoplay = true; 
+                vid.playsinline = true; 
+                vid.muted = true;
+                userCard.appendChild(vid);
+            }
+            if(vid.srcObject !== stream) vid.srcObject = stream;
+        }
+
+        // 탭 이동 시 절대시간 보정 타이머
+        function startTimer() {
+            if(sharingInterval) return;
+            lastTick = Date.now();
+            sharingInterval = setInterval(() => {
+                const now = Date.now();
+                const delta = Math.floor((now - lastTick) / 1000);
+                if(delta > 0) {
+                    dailySharedSeconds += delta;
+                    lastTick += delta * 1000;
+                    updateTimeUI();
+                    
+                    // 10초마다 DB 저장
+                    if(dailySharedSeconds % 10 === 0) {
+                        const nick = localStorage.getItem('deadline_nickname');
+                        if(nick) updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { dailySeconds: dailySharedSeconds });
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(sharingInterval); 
+            sharingInterval = null;
+        }
+
+        function updateTimeUI() {
+            const h = String(Math.floor(dailySharedSeconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((dailySharedSeconds % 3600) / 60)).padStart(2, '0');
+            const s = String(dailySharedSeconds % 60).padStart(2, '0');
+            
+            document.querySelectorAll('.daily-time-display').forEach(el => el.textContent = `${h}:${m}:${s}`);
+            
+            const percent = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('progress-percent').textContent = `${Math.floor(percent)}%`;
+        }
+
+        // 창 닫을 때 오프라인 처리
+        window.addEventListener('beforeunload', () => {
+            const nick = localStorage.getItem('deadline_nickname');
+            if(nick) {
+                updateDoc(doc(db, 'artifacts', 'app', 'users', nick), { 
+                    isOnline: false, isSharing: false, lastActive: serverTimestamp() 
+                });
+            }
+        });
+    </script>
+</body>
+</html>

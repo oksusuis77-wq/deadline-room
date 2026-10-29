@@ -237,12 +237,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", authDomain: "deadline-room-768bf.firebaseapp.com", projectId: "deadline-room-768bf" };
         let app, auth, db, currentUser = null, publicUsers = [];
         let peer = null, myPeerId = null, currentCalls = {}, mediaStream = null, myNick = '';
-        let dailySharedSeconds = 0, totalSharedSeconds = 0, sharingInterval = null, lastTick = null; const GOAL_SECONDS = 2 * 60 * 60;
+        let dailySharedSeconds = 0, totalSharedSeconds = 0, sharingInterval = null, lastTick = null; 
+        const GOAL_SECONDS = 2 * 60 * 60;
         let lastResetDateStr = '';
 
         const DB_COLLECTION = 'artifacts/app/users';

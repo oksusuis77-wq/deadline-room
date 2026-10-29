@@ -200,7 +200,7 @@
         window.myNickname = '';
         function showToast(msg) {
             var el = document.getElementById('toast-message'), container = document.getElementById('toast-container');
-            if(el && container) { el.textContent = msg; container.classList.remove('hidden-safely'); setTimeout(() => container.classList.add('hidden-safely'), 3000); }
+            if(el && container) { el.textContent = msg; container.classList.remove('hidden-safely'); setTimeout(function(){ container.classList.add('hidden-safely'); }, 3000); }
         }
         window.doLogin = function() {
             var input = document.getElementById('nickname-input');
@@ -212,12 +212,12 @@
             document.body.classList.remove('overflow-hidden');
             window.dispatchEvent(new CustomEvent('init-app', { detail: val }));
         };
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
             var navBtns = document.querySelectorAll('.nav-btn'), tabContents = document.querySelectorAll('.tab-content');
-            navBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    navBtns.forEach(b => { b.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900'); b.classList.add('text-gray-400'); });
-                    tabContents.forEach(c => c.classList.remove('active'));
+            navBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    navBtns.forEach(function(b) { b.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900'); b.classList.add('text-gray-400'); });
+                    tabContents.forEach(function(c) { c.classList.remove('active'); });
                     btn.classList.add('text-gray-900', 'border-b-2', 'border-gray-900');
                     btn.classList.remove('text-gray-400');
                     document.getElementById(btn.dataset.target).classList.add('active');
@@ -248,27 +248,27 @@
 
         const DB_COLLECTION = 'artifacts/app/users';
 
-        function get3AMDateString(dateObj = new Date()) {
-            const d = new Date(dateObj);
+        function get3AMDateString(dateObj) {
+            const d = dateObj ? new Date(dateObj) : new Date();
             d.setHours(d.getHours() - 3);
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        function get3AMDayIndex(dateObj = new Date()) {
-            const d = new Date(dateObj);
+        function get3AMDayIndex(dateObj) {
+            const d = dateObj ? new Date(dateObj) : new Date();
             d.setHours(d.getHours() - 3);
             const day = d.getDay(); 
             return day === 0 ? 6 : day - 1; 
         }
 
-        window.addEventListener('init-app', (e) => { myNick = e.detail; initFirebase(); });
+        window.addEventListener('init-app', function(e) { myNick = e.detail; initFirebase(); });
 
         async function initFirebase() {
             app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
             const cred = await signInAnonymously(auth); currentUser = cred.user;
             
             document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-            document.getElementById('user-info').textContent = `${myNick} (온라인)`;
+            document.getElementById('user-info').textContent = myNick + ' (온라인)';
             
             const customIceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -286,15 +286,15 @@
 
             peer = new Peer({ config: { iceServers: customIceServers } });
             
-            peer.on('open', (id) => {
+            peer.on('open', function(id) {
                 myPeerId = id;
                 initUserProfile();
             });
 
-            peer.on('call', (call) => {
+            peer.on('call', function(call) {
                 call.answer(mediaStream || undefined);
                 currentCalls[call.peer] = call;
-                call.on('stream', (stream) => addRemoteVideo(call.peer, stream));
+                call.on('stream', function(stream) { addRemoteVideo(call.peer, stream); });
             });
         }
 
@@ -334,9 +334,9 @@
             }
             updateProgressUI();
             
-            onSnapshot(collection(db, DB_COLLECTION), (snap) => {
+            onSnapshot(collection(db, DB_COLLECTION), function(snap) {
                 publicUsers = [];
-                snap.forEach(d => {
+                snap.forEach(function(d) {
                     const data = d.data();
                     if(data.id) publicUsers.push(data);
                 });
@@ -348,22 +348,27 @@
 
         function checkAndCallOthers() {
             if (!myPeerId || !peer) return;
-            const others = publicUsers.filter(u => u.id !== myNick && u.isOnline && u.peerId);
-            others.forEach(u => {
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline && u.peerId; });
+            others.forEach(function(u) {
                 if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
                     const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
                     if (call) {
                         currentCalls[u.peerId] = call;
-                        call.on('stream', (stream) => addRemoteVideo(u.peerId, stream));
+                        call.on('stream', function(stream) { addRemoteVideo(u.peerId, stream); });
                     }
                 }
             });
         }
 
         const videoEl = document.getElementById('video-element'), placeholder = document.getElementById('video-placeholder');
-        document.getElementById('blur-toggle').addEventListener('change', (e) => {
-            e.target.checked ? videoEl.classList.add('video-blur') : videoEl.classList.remove('video-blur');
-            document.querySelectorAll('.remote-video').forEach(v => e.target.checked ? v.classList.add('video-blur') : v.classList.remove('video-blur'));
+        document.getElementById('blur-toggle').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                videoEl.classList.add('video-blur');
+                document.querySelectorAll('.remote-video').forEach(function(v) { v.classList.add('video-blur'); });
+            } else {
+                videoEl.classList.remove('video-blur');
+                document.querySelectorAll('.remote-video').forEach(function(v) { v.classList.remove('video-blur'); });
+            }
         });
 
         window.startStream = async function(type) {
@@ -379,7 +384,7 @@
                 startTimeTracking(); showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
                 if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
                 
-                Object.values(currentCalls).forEach(c => c.close());
+                Object.values(currentCalls).forEach(function(c) { c.close(); });
                 currentCalls = {};
                 checkAndCallOthers();
             } catch (err) { showToast("권한이 거부되었습니다."); }
@@ -387,7 +392,7 @@
 
         window.stopStream = function() {
             if (mediaStream) {
-                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream.getTracks().forEach(function(t) { t.stop(); });
                 mediaStream = null;
             }
             videoEl.classList.add('hidden-safely'); placeholder.classList.remove('hidden-safely');
@@ -400,9 +405,9 @@
 
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const others = publicUsers.filter(u => u.id !== myNick && u.isOnline);
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
             
-            others.forEach(u => {
+            others.forEach(function(u) {
                 const safeId = 'card_' + encodeURIComponent(u.id).replace(/%/g, '_');
                 let card = document.getElementById(safeId);
                 const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
@@ -410,21 +415,20 @@
                 if (!card) {
                     card = document.createElement('div'); card.id = safeId;
                     card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group flex items-center justify-center";
-                    card.innerHTML = `
-                        <div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10">
-                            <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-3xl mb-4">${u.id.charAt(0)}</div>
-                            <p class="text-xl font-bold text-gray-900">${u.id}</p>
-                            <p class="text-base text-gray-500 mt-1 goal-text">${u.goal || '목표 없음'}</p>
-                        </div>
-                        <div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">
-                            <span class="w-2 h-2 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
-                            ${u.id} (<span class="time-text">${h}h ${m}m</span>)
-                        </div>`;
+                    card.innerHTML = '<div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10">' +
+                        '<div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-3xl mb-4">' + u.id.charAt(0) + '</div>' +
+                        '<p class="text-xl font-bold text-gray-900">' + u.id + '</p>' +
+                        '<p class="text-base text-gray-500 mt-1 goal-text">' + (u.goal || '목표 없음') + '</p>' +
+                        '</div>' +
+                        '<div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">' +
+                        '<span class="w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400') + '"></span>' +
+                        u.id + ' (<span class="time-text">' + h + 'h ' + m + 'm</span>)' +
+                        '</div>';
                     grid.appendChild(card);
                 } else {
-                    card.querySelector('.time-text').textContent = `${h}h ${m}m`;
+                    card.querySelector('.time-text').textContent = h + 'h ' + m + 'm';
                     card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
-                    card.querySelector('.status-dot').className = `w-2 h-2 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
+                    card.querySelector('.status-dot').className = 'w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400');
                     
                     const layer = card.querySelector('.ui-layer');
                     const vid = card.querySelector('video.remote-video');
@@ -434,12 +438,14 @@
                     }
                 }
             });
-            Array.from(grid.children).forEach(c => { if (!others.find(u => 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id)) c.remove(); });
+            Array.from(grid.children).forEach(function(c) { 
+                if (!others.find(function(u) { return 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id; })) c.remove(); 
+            });
         }
 
         function addRemoteVideo(incomingId, stream) {
             if(!stream || stream.getVideoTracks().length === 0) return;
-            const user = publicUsers.find(u => u.peerId === incomingId);
+            const user = publicUsers.find(function(u) { return u.peerId === incomingId; });
             if(!user || !user.isSharing) return;
             
             const card = document.getElementById('card_' + encodeURIComponent(user.id).replace(/%/g, '_'));
@@ -449,7 +455,7 @@
             let vid = card.querySelector('video.remote-video');
             if(!vid) {
                 vid = document.createElement('video');
-                vid.className = `remote-video absolute inset-0 w-full h-full object-cover z-40 ${document.getElementById('blur-toggle').checked ? 'video-blur' : ''}`;
+                vid.className = 'remote-video absolute inset-0 w-full h-full object-cover z-40 ' + (document.getElementById('blur-toggle').checked ? 'video-blur' : '');
                 vid.autoplay = true; vid.playsinline = true; vid.muted = true;
                 card.appendChild(vid);
             }
@@ -459,7 +465,7 @@
         function startTimeTracking() {
             if (sharingInterval) return;
             lastTick = Date.now();
-            sharingInterval = setInterval(() => {
+            sharingInterval = setInterval(function() {
                 const now = Date.now();
                 const current3AM = get3AMDateString(new Date(now));
                 
@@ -492,13 +498,16 @@
         }
         function stopTimeTracking() { if (sharingInterval) clearInterval(sharingInterval); sharingInterval = null; }
         function updateProgressUI() {
-            const h = Math.floor(dailySharedSeconds / 3600).toString().padStart(2, '0'), m = Math.floor((dailySharedSeconds % 3600) / 60).toString().padStart(2, '0'), s = (dailySharedSeconds % 60).toString().padStart(2, '0');
-            document.querySelectorAll('.daily-time-display').forEach(el => el.textContent = `${h}:${m}:${s}`);
+            const h = Math.floor(dailySharedSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((dailySharedSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (dailySharedSeconds % 60).toString().padStart(2, '0');
+            document.querySelectorAll('.daily-time-display').forEach(function(el) { el.textContent = h + ':' + m + ':' + s; });
             const percent = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
-            document.getElementById('progress-bar').style.width = `${percent}%`; document.getElementById('progress-percent').textContent = `${Math.floor(percent)}%`;
+            document.getElementById('progress-bar').style.width = percent + '%'; 
+            document.getElementById('progress-percent').textContent = Math.floor(percent) + '%';
         }
 
-        document.getElementById('btn-save-goal').onclick = async () => {
+        document.getElementById('btn-save-goal').onclick = async function() {
             const newGoal = document.getElementById('room-goal-input').value.trim();
             if (!myNick || !newGoal) return;
             
@@ -509,7 +518,7 @@
             const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
             const currentDayName = daysKey[get3AMDayIndex()];
             
-            history = history.filter(h => h.day !== currentDayName);
+            history = history.filter(function(h) { return h.day !== currentDayName; });
             history.unshift({ day: currentDayName, goal: newGoal });
 
             await updateDoc(userRef, { 
@@ -519,28 +528,50 @@
             showToast("오늘의 목표 저장 및 기록 완료!");
         };
 
-        const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
+        const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; 
+        let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
+        
         function setPomo(mode) {
-            if(isPomoRun) togglePomo(); pomoMode = mode; pomoSec = mode === 'work' ? POMO_WORK : POMO_BREAK;
+            if(isPomoRun) togglePomo(); 
+            pomoMode = mode; 
+            pomoSec = mode === 'work' ? POMO_WORK : POMO_BREAK;
             document.getElementById('mode-work').className = mode === 'work' ? 'px-5 py-2 rounded-full text-base font-bold bg-gray-900 text-white shadow-md' : 'px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100';
-            document.getElementById('mode-break').className = mode === 'break' ? 'px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100';
+            document.getElementById('mode-break').className = mode === 'break' ? 'px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100' : 'px-5 py-2 rounded-full text-base font-bold text-gray-500 hover:bg-gray-100';
             updatePomo();
         }
+
         function updatePomo() {
-            display.textContent = `${Math.floor(pomoSec / 60).toString().padStart(2, '0')}:${(pomoSec % 60).toString().padStart(2, '0')}`;
-            const total = pomoMode === 'work' ? POMO_WORK : POMO_BREAK; fill.style.transform = `scaleY(${((total - pomoSec) / total)})`;
-            fill.className = `absolute inset-0 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear ${pomoMode === 'work' ? 'bg-gray-50' : 'bg-green-50'}`;
+            display.textContent = Math.floor(pomoSec / 60).toString().padStart(2, '0') + ':' + (pomoSec % 60).toString().padStart(2, '0');
+            const total = pomoMode === 'work' ? POMO_WORK : POMO_BREAK; 
+            fill.style.transform = 'scaleY(' + ((total - pomoSec) / total) + ')';
+            fill.className = 'absolute inset-0 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear ' + (pomoMode === 'work' ? 'bg-gray-50' : 'bg-green-50');
         }
+
         function togglePomo() {
-            if (isPomoRun) { clearInterval(pomoInt); isPomoRun = false; document.getElementById('btn-pomo-start').textContent = "계속하기"; }
-            else {
-                isPomoRun = true; document.getElementById('btn-pomo-start').textContent = "일시정지";
-                pomoInt = setInterval(() => { if (pomoSec > 0) { pomoSec--; updatePomo(); } else { showToast(pomoMode === 'work' ? "휴식!" : "집중!"); setPomo(pomoMode === 'work' ? 'break' : 'work'); } }, 1000);
+            if (isPomoRun) { 
+                clearInterval(pomoInt); 
+                isPomoRun = false; 
+                document.getElementById('btn-pomo-start').textContent = "계속하기"; 
+            } else {
+                isPomoRun = true; 
+                document.getElementById('btn-pomo-start').textContent = "일시정지";
+                pomoInt = setInterval(function() { 
+                    if (pomoSec > 0) { 
+                        pomoSec--; 
+                        updatePomo(); 
+                    } else { 
+                        showToast(pomoMode === 'work' ? "휴식!" : "집중!"); 
+                        setPomo(pomoMode === 'work' ? 'break' : 'work'); 
+                    } 
+                }, 1000);
             }
         }
-        document.getElementById('mode-work').onclick = () => setPomo('work'); document.getElementById('mode-break').onclick = () => setPomo('break');
-        document.getElementById('btn-pomo-start').onclick = togglePomo; document.getElementById('btn-pomo-reset').onclick = () => setPomo(pomoMode);
+
+        document.getElementById('mode-work').onclick = function() { setPomo('work'); }; 
+        document.getElementById('mode-break').onclick = function() { setPomo('break'); };
+        document.getElementById('btn-pomo-start').onclick = togglePomo; 
+        document.getElementById('btn-pomo-reset').onclick = function() { setPomo(pomoMode); };
 
         window.renderCommunityLog = function() {
             const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
@@ -549,7 +580,7 @@
             const communityListEl = document.getElementById('community-list');
             const monthlyGridEl = document.getElementById('monthly-author-grid');
 
-            communityListEl.innerHTML = publicUsers.map(u => {
+            communityListEl.innerHTML = publicUsers.map(function(u) {
                 const warnCount = u.warnings || 0;
                 let heartsHtml = '';
                 for(let i = 0; i < 3; i++) {
@@ -567,7 +598,7 @@
 
                 const weekDaysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
                 
-                let weekHtml = weekDaysOrder.map((dayKey, idx) => {
+                let weekHtml = weekDaysOrder.map(function(dayKey, idx) {
                     let icon = '-';
                     if (idx <= 3) {
                         icon = '😊';
@@ -580,73 +611,49 @@
                         icon = '-';
                     }
 
-                    return `
-                        <div class="flex flex-col items-center">
-                            <span class="text-xs text-gray-400 font-bold mb-1">${daysKey[idx]}</span>
-                            <span class="text-2xl">${icon}</span>
-                        </div>
-                    `;
+                    return '<div class="flex flex-col items-center">' +
+                        '<span class="text-xs text-gray-400 font-bold mb-1">' + daysKey[idx] + '</span>' +
+                        '<span class="text-2xl">' + icon + '</span>' +
+                        '</div>';
                 }).join('');
 
                 const historyList = u.goalHistory || [];
-                let goalHistoryHtml = historyList.length > 0 ? historyList.map(item => `
-                    <li class="text-sm text-gray-700 flex items-center gap-2">
-                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">[${item.day}]</span>
-                        <span>${item.goal}</span>
-                    </li>
-                `).join('') : `<li class="text-sm text-gray-400">아직 저장된 목표 기록이 없습니다.</li>`;
+                let goalHistoryHtml = historyList.length > 0 ? historyList.map(function(item) {
+                    return '<li class="text-sm text-gray-700 flex items-center gap-2">' +
+                        '<span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">[' + item.day + ']</span>' +
+                        '<span>' + item.goal + '</span>' +
+                        '</li>';
+                }).join('') : '<li class="text-sm text-gray-400">아직 저장된 목표 기록이 없습니다.</li>';
 
-                return `
-                    <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-5">
-                            <div class="flex items-center gap-5">
-                                <div class="w-16 h-16 rounded-2xl bg-gray-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">
-                                    ${u.id.charAt(0)}
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-2xl text-gray-900">${u.id}</h3>
-                                    <p class="text-sm text-gray-500 mt-1">오늘의 목표: <span class="text-gray-900 font-bold">${u.goal || '목표 미설정'}</span></p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-center">
-                                <span class="text-sm text-gray-500 font-bold">남은 생명</span>
-                                <div class="text-lg tracking-widest">${heartsHtml}</div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between items-center text-sm font-bold text-gray-600 mb-2">
-                                <span>오늘 작업 (${h}시간 ${m}분 / 2시간 목표)</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">총 누적 ${totalH}시간 ${totalM}분</span>
-                                    <span class="text-gray-900 text-base">${Math.floor(progress)}%</span>
-                                </div>
-                            </div>
-                            <div class="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">
-                                <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50/70 rounded-2xl p-5 border border-gray-100">
-                            <span class="text-sm font-bold text-gray-500 block mb-3">주간 7일 마감 현황 (새벽 3시 정산)</span>
-                            <div class="grid grid-cols-7 gap-2 text-center">
-                                ${weekHtml}
-                            </div>
-                        </div>
-
-                        <div class="bg-indigo-50/30 rounded-2xl p-5 border border-indigo-50/50">
-                            <span class="text-sm font-bold text-indigo-900 block mb-3">📌 이번 주 집필 목표 기록</span>
-                            <ul class="space-y-2">
-                                ${goalHistoryHtml}
-                            </ul>
-                        </div>
-                    </div>`;
+                return '<div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">' +
+                    '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-5">' +
+                    '<div class="flex items-center gap-5">' +
+                    '<div class="w-16 h-16 rounded-2xl bg-gray-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">' + u.id.charAt(0) + '</div>' +
+                    '<div><h3 class="font-bold text-2xl text-gray-900">' + u.id + '</h3>' +
+                    '<p class="text-sm text-gray-500 mt-1">오늘의 목표: <span class="text-gray-900 font-bold">' + (u.goal || '목표 미설정') + '</span></p></div>' +
+                    '</div>' +
+                    '<div class="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-center">' +
+                    '<span class="text-sm text-gray-500 font-bold">남은 생명</span>' +
+                    '<div class="text-lg tracking-widest">' + heartsHtml + '</div></div></div>' +
+                    '<div><div class="flex justify-between items-center text-sm font-bold text-gray-600 mb-2">' +
+                    '<span>오늘 작업 (' + h + '시간 ' + m + '분 / 2시간 목표)</span>' +
+                    '<div class="flex items-center gap-2">' +
+                    '<span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">총 누적 ' + totalH + '시간 ' + totalM + '분</span>' +
+                    '<span class="text-gray-900 text-base">' + Math.floor(progress) + '%</span></div></div>' +
+                    '<div class="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">' +
+                    '<div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ' + progress + '%"></div></div></div>' +
+                    '<div class="bg-gray-50/70 rounded-2xl p-5 border border-gray-100">' +
+                    '<span class="text-sm font-bold text-gray-500 block mb-3">주간 7일 마감 현황 (새벽 3시 정산)</span>' +
+                    '<div class="grid grid-cols-7 gap-2 text-center">' + weekHtml + '</div></div>' +
+                    '<div class="bg-indigo-50/30 rounded-2xl p-5 border border-indigo-50/50">' +
+                    '<span class="text-sm font-bold text-indigo-900 block mb-3">📌 이번 주 집필 목표 기록</span>' +
+                    '<ul class="space-y-2">' + goalHistoryHtml + '</ul></div></div>';
             }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
 
             const now = new Date();
-            document.getElementById('month-label').textContent = `${now.getMonth() + 1}월 현황`;
+            document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
 
-            monthlyGridEl.innerHTML = publicUsers.map(u => {
+            monthlyGridEl.innerHTML = publicUsers.map(function(u) {
                 const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
                 const totalH = Math.floor(userTotalSec / 3600);
                 const totalM = Math.floor((userTotalSec % 3600) / 60);
@@ -654,30 +661,20 @@
                 const todayProgress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
                 const avgProgress = Math.min(Math.floor((400 + todayProgress) / 5), 100);
 
-                return `
-                    <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4">
-                        <div class="flex items-center gap-3 border-b border-gray-200/60 pb-3">
-                            <div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">
-                                ${u.id.charAt(0)}
-                            </div>
-                            <span class="font-bold text-lg text-gray-900">${u.id} 작가</span>
-                        </div>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-500 font-medium">이달의 총 작업 시간</span>
-                                <span class="font-bold text-gray-900 text-base">${totalH}시간 ${totalM}분</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-500 font-medium">이달의 평균 달성률</span>
-                                <span class="font-bold text-emerald-600 text-base">${avgProgress}%</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                return '<div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4">' +
+                    '<div class="flex items-center gap-3 border-b border-gray-200/60 pb-3">' +
+                    '<div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">' + u.id.charAt(0) + '</div>' +
+                    '<span class="font-bold text-lg text-gray-900">' + u.id + ' 작가</span></div>' +
+                    '<div class="space-y-2 text-sm">' +
+                    '<div class="flex justify-between items-center"><span class="text-gray-500 font-medium">이달의 총 작업 시간</span><span class="font-bold text-gray-900 text-base">' + totalH + '시간 ' + totalM + '분</span></div>' +
+                    '<div class="flex justify-between items-center"><span class="text-gray-500 font-medium">이달의 평균 달성률</span><span class="font-bold text-emerald-600 text-base">' + avgProgress + '%</span></div>' +
+                    '</div></div>';
             }).join('') || '<div class="text-gray-400 col-span-full py-6 text-center">참여자가 없습니다.</div>';
         };
 
-        window.addEventListener('beforeunload', () => { if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); });
+        window.addEventListener('beforeunload', function() { 
+            if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); 
+        });
     </script>
 </body>
 </html>

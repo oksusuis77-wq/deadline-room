@@ -60,7 +60,6 @@
             
             <nav class="hidden md:flex items-center gap-8">
                 <button class="nav-btn text-gray-900 font-semibold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-journal">개인 집필 일지</button>
                 <button class="nav-btn text-gray-400 hover:text-gray-900 font-medium pb-1 transition-colors" data-target="tab-community">Log</button>
             </nav>
 
@@ -157,28 +156,25 @@
             </div>
         </section>
 
-        <!-- 탭 2: 집필 일지 -->
-        <section id="tab-journal" class="tab-content">
-            <div class="flex flex-col lg:flex-row gap-8">
-                <div class="lg:w-1/3">
-                    <div class="sticky top-24 bg-white rounded-3xl p-8 card-shadow border border-gray-100">
-                        <h2 class="text-xl font-bold text-gray-900 mb-6">오늘의 일지 작성</h2>
-                        <form id="log-form" class="space-y-4">
-                            <div><label class="block text-xs font-semibold text-gray-500 mb-2">날짜</label><input type="date" id="log-date" required class="w-full bg-gray-50 rounded-2xl px-5 py-3 outline-none text-sm"></div>
-                            <div><label class="block text-xs font-semibold text-gray-500 mb-2">제목</label><input type="text" id="log-title" placeholder="어떤 작업을 하셨나요?" required class="w-full bg-gray-50 rounded-2xl px-5 py-3 outline-none text-sm"></div>
-                            <div><label class="block text-xs font-semibold text-gray-500 mb-2">작업량</label><input type="number" id="log-count" placeholder="예: 5000" required class="w-full bg-gray-50 rounded-2xl px-5 py-3 outline-none text-sm"></div>
-                            <div><label class="block text-xs font-semibold text-gray-500 mb-2">내용</label><textarea id="log-note" required rows="4" class="w-full bg-gray-50 rounded-2xl px-5 py-4 outline-none resize-none text-sm" placeholder="소감을 남겨주세요."></textarea></div>
-                            <button type="submit" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold cursor-pointer mt-2">일지에 저장</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="lg:w-2/3"><div class="columns-1 sm:columns-2 gap-6 space-y-6" id="log-list"></div></div>
-            </div>
-        </section>
-
-        <!-- 탭 3: 커뮤니티 -->
+        <!-- 탭 2: Log (복구된 커뮤니티 현황) -->
         <section id="tab-community" class="tab-content">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">동료 작가 마감 현황</h2>
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">동료 작가 마감 현황</h2>
+                    <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl border border-gray-100 card-shadow text-sm text-gray-600">
+                    <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        마감방 규칙
+                    </h4>
+                    <ul class="space-y-2 text-xs">
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5일 이상, 하루 2시간 이상 작업 필수</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주간 목표 미달성 시 경고 1회 누적 (🚨)</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 누적 경고 3회 시 마감방 <strong class="text-red-500">퇴출</strong></li>
+                    </ul>
+                </div>
+            </div>
             <div class="grid grid-cols-1 gap-6" id="community-list"></div>
         </section>
     </main>
@@ -225,7 +221,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", authDomain: "deadline-room-768bf.firebaseapp.com", projectId: "deadline-room-768bf" };
         let app, auth, db, currentUser = null, publicUsers = [];
@@ -242,9 +238,6 @@
             
             document.getElementById('auth-status').className = 'w-2 h-2 rounded-full bg-emerald-500';
             document.getElementById('user-info').textContent = `${myNick} (온라인)`;
-            
-            var logDate = document.getElementById('log-date');
-            if(logDate) logDate.valueAsDate = new Date();
             
             /* Metered.ca TURN 서버 설정 */
             const customIceServers = [
@@ -273,7 +266,6 @@
                 currentCalls[call.peer] = call;
                 call.on('stream', (stream) => addRemoteVideo(call.peer, stream));
             });
-            setupLogsListener();
         }
 
         async function initUserProfile() {
@@ -281,7 +273,7 @@
             const snap = await getDoc(userRef);
             
             if (!snap.exists()) {
-                await setDoc(userRef, { id: myNick, nickname: myNick, peerId: myPeerId, goal: '', dailySeconds: 0, lastActive: serverTimestamp(), isOnline: true, isSharing: false });
+                await setDoc(userRef, { id: myNick, nickname: myNick, peerId: myPeerId, goal: '', dailySeconds: 0, warnings: 0, lastActive: serverTimestamp(), isOnline: true, isSharing: false });
             } else {
                 await updateDoc(userRef, { peerId: myPeerId, isOnline: true, lastActive: serverTimestamp() });
                 if (snap.data().goal) document.getElementById('room-goal-input').value = snap.data().goal;
@@ -296,18 +288,15 @@
                     if(data.id) publicUsers.push(data);
                 });
                 renderOtherUsers();
-                // 사용자 등록/상태 변경 시 상시 화면 연결 시도
                 checkAndCallOthers();
                 if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
             });
         }
 
-        // 새 참가자 및 공유 상태 변경에 따른 실시간 커넥션 재연결 보완
         function checkAndCallOthers() {
             if (!myPeerId || !peer) return;
             const others = publicUsers.filter(u => u.id !== myNick && u.isOnline && u.peerId);
             others.forEach(u => {
-                // 상대가 공유 중이거나 내가 공유 중일 때 커넥션이 없으면 연결 시도
                 if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
                     const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
                     if (call) {
@@ -337,22 +326,23 @@
                 startTimeTracking(); showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
                 if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
                 
-                // 기존 통신 종료 후 스트림 재전송
                 Object.values(currentCalls).forEach(c => c.close());
                 currentCalls = {};
                 checkAndCallOthers();
             } catch (err) { showToast("권한이 거부되었습니다."); }
         }
 
+        // 화공 중지 시 내 트랙만 끄고 상대방 연결은 정상 유지
         function stopStream() {
-            if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-            mediaStream = null;
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
             videoEl.classList.add('hidden-safely'); placeholder.classList.remove('hidden-safely');
             document.getElementById('btn-cam').classList.remove('hidden-safely'); document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely'); document.getElementById('live-indicator').classList.add('hidden-safely');
             
             if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: false });
-            Object.values(currentCalls).forEach(c => c.close()); currentCalls = {};
             stopTimeTracking();
         }
 
@@ -376,7 +366,7 @@
                         <div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10">
                             <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-2xl mb-4">${u.id.charAt(0)}</div>
                             <p class="text-base font-bold text-gray-900">${u.id}</p>
-                            <p class="text-sm text-gray-500 mt-1">${u.goal || '목표 없음'}</p>
+                            <p class="text-sm text-gray-500 mt-1 goal-text">${u.goal || '목표 없음'}</p>
                         </div>
                         <div class="absolute top-4 left-4 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 z-50">
                             <span class="w-1.5 h-1.5 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
@@ -385,7 +375,16 @@
                     grid.appendChild(card);
                 } else {
                     card.querySelector('.time-text').textContent = `${h}h ${m}m`;
+                    card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
                     card.querySelector('.status-dot').className = `w-1.5 h-1.5 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
+                    
+                    // 상대방이 화공 중지 시 영상 요소 제거 및 프로필 UI 노출
+                    const layer = card.querySelector('.ui-layer');
+                    const vid = card.querySelector('video.remote-video');
+                    if (!u.isSharing) {
+                        if (vid) vid.remove();
+                        if (layer) layer.style.display = 'flex';
+                    }
                 }
             });
             Array.from(grid.children).forEach(c => { if (!others.find(u => 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id)) c.remove(); });
@@ -394,7 +393,7 @@
         function addRemoteVideo(incomingId, stream) {
             if(!stream || stream.getVideoTracks().length === 0) return;
             const user = publicUsers.find(u => u.peerId === incomingId);
-            if(!user) return;
+            if(!user || !user.isSharing) return;
             
             const card = document.getElementById('card_' + encodeURIComponent(user.id).replace(/%/g, '_'));
             if(!card) return;
@@ -434,6 +433,7 @@
             showToast("목표 저장 완료");
         };
 
+        // 뽀모도로 타이머
         const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
         function setPomo(mode) {
@@ -457,22 +457,36 @@
         document.getElementById('mode-work').onclick = () => setPomo('work'); document.getElementById('mode-break').onclick = () => setPomo('break');
         document.getElementById('btn-pomo-start').onclick = togglePomo; document.getElementById('btn-pomo-reset').onclick = () => setPomo(pomoMode);
 
-        function setupLogsListener() {
-            onSnapshot(query(collection(db, DB_COLLECTION, myNick, 'logs')), (snap) => {
-                const logs = []; snap.forEach(d => logs.push({ id: d.id, ...d.data() })); logs.sort((a, b) => b.timestamp - a.timestamp);
-                document.getElementById('log-list').innerHTML = logs.map(l => `<div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 mb-6 w-full"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-gray-900">${l.title}</h3><span class="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-md">${l.date}</span></div><div class="mb-4"><span class="bg-gray-100 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-xl">${l.count}자</span></div><p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${l.note}</p></div>`).join('') || '<div class="text-gray-400 text-sm py-4">일지가 없습니다.</div>';
-            });
-        }
-        document.getElementById('log-form').onsubmit = async (e) => {
-            e.preventDefault();
-            await addDoc(collection(db, DB_COLLECTION, myNick, 'logs'), { date: document.getElementById('log-date').value, title: document.getElementById('log-title').value, count: parseInt(document.getElementById('log-count').value), note: document.getElementById('log-note').value, timestamp: Date.now() });
-            e.target.reset(); showToast("저장 완료");
-        };
-
+        // 복구된 Log 탭 렌더링 (규칙, 경고, 집필시간 카운팅 양식)
         window.renderCommunityLog = function() {
             document.getElementById('community-list').innerHTML = publicUsers.map(u => {
-                const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60), progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
-                return `<div class="rounded-3xl p-6 card-shadow border border-gray-100 ${u.id === myNick ? 'bg-indigo-50/30' : 'bg-white'} flex items-center justify-between gap-8"><div class="flex items-center gap-5"><div class="w-16 h-16 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center font-bold text-2xl">${u.id.charAt(0)}</div><div class="font-bold text-xl">${u.id}</div></div><div class="flex-1"><div class="flex justify-between text-xs font-bold text-gray-500 mb-2"><span>오늘 작업 (${h}h ${m}m)</span><span>${Math.floor(progress)}%</span></div><div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width: ${progress}%"></div></div></div></div>`;
+                const isExpelled = (u.warnings || 0) >= 3;
+                const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
+                const progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
+                const cardClass = isExpelled ? 'bg-gray-50 opacity-70 grayscale' : (u.id === myNick ? 'bg-indigo-50/30' : 'bg-white');
+                
+                return `
+                    <div class="rounded-3xl p-6 card-shadow border border-gray-100 ${cardClass} flex items-center justify-between gap-8 relative overflow-hidden">
+                        <div class="flex items-center gap-5">
+                            <div class="w-16 h-16 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center font-bold text-2xl">
+                                ${u.id.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="font-bold text-xl mb-1">${u.id}</div>
+                                <div class="text-sm font-medium text-red-500 bg-white px-2.5 py-1 rounded-lg border border-gray-100 shadow-sm inline-block">
+                                    경고 ${u.warnings || 0}회
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                                <span>오늘 작업 (${h}시간 ${m}분)</span><span>${Math.floor(progress)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                    </div>`;
             }).join('') || '<div class="text-gray-400 py-10">참여자가 없습니다.</div>';
         };
 

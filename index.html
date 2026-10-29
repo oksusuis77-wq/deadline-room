@@ -93,4 +93,54 @@
 
             <div class="flex flex-col lg:flex-row gap-8">
                 <div class="lg:w-2/3 space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-end
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">함께 마감하는 집필실</h2>
+                            <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                            <label class="flex items-center gap-2 px-3 text-sm cursor-pointer text-gray-600 hover:text-gray-900 transition-colors">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900">
+                                <span class="font-medium">모자이크</span>
+                            </label>
+                            <div class="w-px h-6 bg-gray-200"></div>
+                            <button id="btn-cam" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold transition-colors">웹캠</button>
+                            <button id="btn-screen" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors shadow-md">화면공유</button>
+                            <button id="btn-stop" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors">중지</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
+                        <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group">
+                            <video id="video-element" class="w-full h-full object-cover hidden-safely transition-all duration-300" autoplay playsinline muted></video>
+                            
+                            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
+                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <p class="text-sm font-medium">내 화면이 여기에 표시됩니다</p>
+                            </div>
+
+                            <div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-2 z-20">
+                                <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
+                                나 (<span class="daily-time-display">00:00:00</span>)
+                            </div>
+                        </div>
+                        <div id="other-users-grid" class="contents"></div>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/3 flex flex-col gap-6">
+                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
+                        <h3 class="font-bold text-gray-900 mb-4">하루 2시간 챌린지</h3>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-2xl font-light text-gray-900 daily-time-display">00:00:00</span>
+                            <span class="text-gray-400 text-sm font-medium" id="progress-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-1000 w-0"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-

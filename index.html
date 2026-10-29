@@ -225,7 +225,7 @@
 
     </main>
 
-    <!-- UI 독립 동작 스크립트 (즉시 100% 이벤트 등록) -->
+    <!-- UI 독립 동작 스크립트 -->
     <script>
         window.LOCAL_KEY = 'deadline_room_nickname';
         window.myNickname = '';
@@ -265,7 +265,6 @@
         };
 
         document.addEventListener('DOMContentLoaded', function() {
-            // 탭 전환 이벤트 100% 보장 등록
             var navBtns = document.querySelectorAll('.nav-btn');
             var tabContents = document.querySelectorAll('.tab-content');
             
@@ -288,7 +287,6 @@
                 });
             });
 
-            // 자동 로그인
             try {
                 var saved = localStorage.getItem(window.LOCAL_KEY);
                 if (saved) {
@@ -301,7 +299,7 @@
         });
     </script>
 
-    <!-- 백엔드 모듈 스크립트 (에러로 인한 버튼 락 차단 방어벽 적용) -->
+    <!-- 백엔드 모듈 스크립트 (Firestore 시그널링 보장 화면 공유) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -380,14 +378,16 @@
                         });
 
                         peer.on('open', (id) => console.log('Peer ID 생성 성공:', id));
+                        
                         peer.on('call', (call) => {
                             if (mediaStream) call.answer(mediaStream);
                             else call.answer();
                             handleCallEvents(call, call.peer);
                         });
+                        
                         peer.on('error', (err) => console.warn('PeerJS 에러:', err));
                     }
-                } catch(pe) { console.warn("PeerJS 초기화 무시:", pe); }
+                } catch(pe) { console.warn("PeerJS 초기화 오류:", pe); }
 
                 await initUserProfile();
                 setupPublicUsersListener();
@@ -409,7 +409,7 @@
                 await setDoc(userRef, {
                     nickname: nick, goal: '', dailySeconds: 0, totalChars: 0,
                     warnings: 0, streak: 0, weeklyDays: 0, monthlyHours: 0, monthlyChars: 0,
-                    lastActive: serverTimestamp(), isOnline: true
+                    lastActive: serverTimestamp(), isOnline: true, isSharing: false
                 });
                 dailySharedSeconds = 0;
             } else {
@@ -431,16 +431,18 @@
                     snap.forEach(d => publicUsers.push({ id: d.id, ...d.data() }));
                     renderOtherUsers();
                     
-                    if (peer && mediaStream) {
-                        const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
-                        const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
-                        others.forEach(u => {
-                            const safeOtherId = getSafePeerId(u.id);
+                    const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
+                    const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
+
+                    // 누군가 화면 공유를 시작(isSharing: true)했거나, 내가 공유 중일 때 서로 연결 재시도
+                    others.forEach(u => {
+                        const safeOtherId = getSafePeerId(u.id);
+                        if (u.isSharing || mediaStream) {
                             if (!currentCalls[safeOtherId]) {
                                 makeCall(safeOtherId);
                             }
-                        });
-                    }
+                        }
+                    });
                     
                     if (document.getElementById('tab-community').classList.contains('active')) {
                         renderCommunityLog();
@@ -468,25 +470,30 @@
         });
 
         function makeCall(peerId) {
-            if (!peer || !mediaStream) return;
+            if (!peer) return;
             if (currentCalls[peerId]) {
                 try { currentCalls[peerId].close(); } catch(e){}
             }
-            const call = peer.call(peerId, mediaStream);
+            
+            // mediaStream이 있으면 내 화면을 같이 전송, 없으면 수신 대기 콜 전송
+            const call = mediaStream ? peer.call(peerId, mediaStream) : peer.call(peerId);
             if(call) handleCallEvents(call, peerId);
         }
 
         function handleCallEvents(call, peerId) {
             currentCalls[peerId] = call;
+            
             call.on('stream', (remoteStream) => {
                 remoteStreams[peerId] = remoteStream;
                 addRemoteVideo(peerId, remoteStream);
             });
+            
             call.on('close', () => {
                 delete currentCalls[peerId];
                 delete remoteStreams[peerId];
                 removeRemoteVideo(peerId);
             });
+            
             call.on('error', (err) => console.error('Call Error:', err));
         }
 
@@ -515,6 +522,13 @@
                 showToast(type === 'cam' ? "웹캠 공유 시작" : "화면 공유 시작");
 
                 const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
+                
+                // Firestore DB에 내가 화면을 켰음을 즉시 업데이트 (모든 접속자에게 감지 신호 발송)
+                if (currentUser && nick) {
+                    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
+                    updateDoc(userRef, { isSharing: true });
+                }
+
                 const others = publicUsers.filter(u => u.id !== nick && u.isOnline);
                 others.forEach(u => {
                     const safeOtherId = getSafePeerId(u.id);
@@ -539,6 +553,12 @@
             document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
             liveIndicator.classList.add('hidden-safely');
+
+            const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
+            if (currentUser && nick) {
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
+                updateDoc(userRef, { isSharing: false });
+            }
 
             Object.keys(currentCalls).forEach(peerId => {
                 if(currentCalls[peerId]) {
@@ -620,6 +640,7 @@
                 }
                 
                 vid.srcObject = stream;
+                
                 vid.onloadedmetadata = () => {
                     vid.play().catch(e => console.error("원격 비디오 재생 에러:", e));
                 };
@@ -947,7 +968,7 @@
             const nick = window.myNickname || localStorage.getItem(window.LOCAL_KEY);
             if (currentUser && nick) {
                 const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', nick);
-                updateDoc(userRef, { isOnline: false, lastActive: serverTimestamp() }).catch(()=>{});
+                updateDoc(userRef, { isOnline: false, isSharing: false, lastActive: serverTimestamp() }).catch(()=>{});
             }
         });
 

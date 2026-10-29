@@ -296,15 +296,18 @@
                     if(data.id) publicUsers.push(data);
                 });
                 renderOtherUsers();
+                // 사용자 등록/상태 변경 시 상시 화면 연결 시도
                 checkAndCallOthers();
                 if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
             });
         }
 
+        // 새 참가자 및 공유 상태 변경에 따른 실시간 커넥션 재연결 보완
         function checkAndCallOthers() {
             if (!myPeerId || !peer) return;
             const others = publicUsers.filter(u => u.id !== myNick && u.isOnline && u.peerId);
             others.forEach(u => {
+                // 상대가 공유 중이거나 내가 공유 중일 때 커넥션이 없으면 연결 시도
                 if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
                     const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
                     if (call) {
@@ -333,6 +336,10 @@
                 mediaStream.getVideoTracks()[0].onended = stopStream;
                 startTimeTracking(); showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
                 if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
+                
+                // 기존 통신 종료 후 스트림 재전송
+                Object.values(currentCalls).forEach(c => c.close());
+                currentCalls = {};
                 checkAndCallOthers();
             } catch (err) { showToast("권한이 거부되었습니다."); }
         }

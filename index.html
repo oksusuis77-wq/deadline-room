@@ -359,8 +359,10 @@
                     btn.classList.add('text-gray-900', 'border-b-2', 'border-gray-900');
                     btn.classList.remove('text-gray-400');
                     document.getElementById(btn.dataset.target).classList.add('active');
+                    
+                    // 탭 전환 시 즉각 렌더링 동기화
                     if (btn.dataset.target === 'tab-community' && window.renderCommunityLog) window.renderCommunityLog();
-                    if (btn.dataset.target === 'tab-personal' && window.renderPersonalTab) window.renderPersonalTab();
+                    if (btn.dataset.target === 'tab-personal' && window.renderPersonalTab) window.renderPersonalTab(true);
                 });
             });
             var saved = localStorage.getItem('deadline_room_nickname');
@@ -437,6 +439,11 @@
                 currentCalls[call.peer] = call;
                 call.on('stream', function(stream) { addRemoteVideo(call.peer, stream); });
             });
+            
+            // 주기적인 접속 상태 갱신 (오프라인 사용자 자동 필터링 목적)
+            setInterval(() => {
+                if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { lastActive: serverTimestamp() });
+            }, 10000); // 10초마다 갱신
         }
 
         async function initUserProfile() {
@@ -471,7 +478,6 @@
                     await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp() });
                 } else {
                     dailySharedSeconds = data.dailySeconds || 0;
-                    // 오차 보정: totalSeconds가 dailySeconds보다 작으면 강제 보정
                     totalSharedSeconds = Math.max(data.totalSeconds || 0, dailySharedSeconds);
                     await updateDoc(userRef, { peerId: myPeerId, isOnline: true, totalSeconds: totalSharedSeconds, lastActive: serverTimestamp() });
                 }
@@ -487,18 +493,10 @@
                     if(data.id) publicUsers.push(data);
                 });
 
-                // 내 데이터 로컬 메모리 보정 및 동기화 (단일 출처화)
                 const myDataSync = publicUsers.find(u => u.id === myNick);
                 if (myDataSync) {
-                    if (myDataSync.dailySeconds !== undefined && !sharingInterval) {
-                        dailySharedSeconds = myDataSync.dailySeconds;
-                    }
-                    if (myDataSync.totalSeconds !== undefined && !sharingInterval) {
-                        totalSharedSeconds = Math.max(myDataSync.totalSeconds, dailySharedSeconds);
-                    }
-                    if (myDataSync.weeklySeconds) myWeeklySeconds = myDataSync.weeklySeconds;
-                    if (myDataSync.timeSlots) myTimeSlots = myDataSync.timeSlots;
-
+                    if (myDataSync.dailySeconds !== undefined && !sharingInterval) dailySharedSeconds = myDataSync.dailySeconds;
+                    if (myDataSync.totalSeconds !== undefined && !sharingInterval) totalSharedSeconds = Math.max(myDataSync.totalSeconds, dailySharedSeconds);
                     if (myDataSync.pomoTrigger && myDataSync.pomoTrigger > lastPomoTriggerTime) {
                         lastPomoTriggerTime = myDataSync.pomoTrigger;
                         showToast("🍅 다같이 뽀모도로가 시작되었습니다!");
@@ -510,8 +508,10 @@
                 updateProgressUI();
                 renderOtherUsers();
                 checkAndCallOthers();
+                
+                // 탭 데이터 실시간 갱신 (퍼스널 탭은 로컬 데이터 최우선)
                 if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
-                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
+                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab(true);
             });
         }
 
@@ -572,10 +572,21 @@
             stopTimeTracking();
         };
 
-        // 퇴장 작가 카드 자동 완전 삭제 (잔상 오류 수정 완료)
+        // 완벽한 잔상 제거 (오프라인 또는 30초 이상 통신 두절 시 확실히 지움)
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
+            const now = Date.now();
+            
+            const others = publicUsers.filter(function(u) {
+                // lastActive 검사: 서버 시간이 찍혀있다면 로컬 시간과 비교하여 30초(30000ms) 이상 차이나면 오프라인 처리
+                let isRecentlyActive = true;
+                if (u.lastActive && u.lastActive.toMillis) {
+                    const diff = now - u.lastActive.toMillis();
+                    if (diff > 30000) isRecentlyActive = false;
+                }
+                return u.id !== myNick && u.isOnline && isRecentlyActive;
+            });
+            
             const validCardIds = new Set(others.map(function(u) { return makeSafeId(u.id); }));
             
             others.forEach(function(u) {
@@ -605,9 +616,9 @@
                 }
             });
 
-            // 퇴장한 작가 DOM에서 완벽히 제거
+            // 화면상에 남아있는 카드들 중 유효하지 않은(퇴장한) 카드는 모두 삭제
             Array.from(grid.children).forEach(function(c) { 
-                if (!validCardIds.has(c.id)) c.remove(); 
+                if (c.id && !validCardIds.has(c.id)) c.remove(); 
             });
         }
 
@@ -652,12 +663,7 @@
                     dailySharedSeconds = 0;
                     lastResetDateStr = current3AM;
                     showToast("오전 3시 기준 당일 카운터가 리셋되었습니다.");
-                    if (myNick) {
-                        updateDoc(doc(db, DB_COLLECTION, myNick), { 
-                            dailySeconds: 0, 
-                            lastResetDate: current3AM 
-                        });
-                    }
+                    if (myNick) { updateDoc(doc(db, DB_COLLECTION, myNick), { dailySeconds: 0, lastResetDate: current3AM }); }
                 }
 
                 const delta = Math.floor((now - lastTick) / 1000);
@@ -681,13 +687,12 @@
                     lastTick += delta * 1000; 
                     updateProgressUI();
 
+                    // 퍼스널 탭 무조건 실시간 동기화 (true 옵션)
                     if (document.getElementById('tab-personal').classList.contains('active')) {
                         window.renderPersonalTab(true);
                     }
 
-                    if (dailySharedSeconds % 5 === 0) {
-                        syncTimeToDB();
-                    }
+                    if (dailySharedSeconds % 5 === 0) syncTimeToDB();
                 }
             }, 1000);
         }
@@ -708,7 +713,7 @@
             document.getElementById('progress-percent').textContent = Math.floor(percent) + '%';
         }
 
-        // 오늘의 목표 저장 (당일 덮어쓰기 완료)
+        // 목표 중복 렌더링 완벽 제거 로직
         document.getElementById('btn-save-goal').onclick = async function() {
             const newGoal = document.getElementById('room-goal-input').value.trim();
             if (!myNick || !newGoal) return;
@@ -720,15 +725,32 @@
             const today3AM = get3AMDateString();
             const currentDayName = dayNamesMap[get3AMDayIndex()];
             
-            history = history.filter(function(h) { return h.dateStr !== today3AM; });
+            // 기존 요일명 저장 데이터와 오늘 날짜 저장 데이터를 모두 청소 (중복 방지)
+            history = history.filter(function(h) { 
+                return h.dateStr !== today3AM && h.day !== currentDayName; 
+            });
+            
+            // 최신 목표 1개만 상단 추가
             history.unshift({ dateStr: today3AM, day: currentDayName, goal: newGoal, isCompleted: false });
+
+            // 안전장치: 날짜별 유니크한 배열로 정제
+            const uniqueHistory = [];
+            const seenDates = new Set();
+            for (let i = 0; i < history.length; i++) {
+                const key = history[i].dateStr || history[i].day;
+                if (!seenDates.has(key)) {
+                    seenDates.add(key);
+                    uniqueHistory.push(history[i]);
+                }
+            }
 
             await updateDoc(userRef, { 
                 goal: newGoal,
-                goalHistory: history 
+                goalHistory: uniqueHistory.slice(0, 7) // 최근 7개만 유지
             });
             showToast("오늘의 목표가 수정(저장)되었습니다!");
-            if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
+            
+            if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab(true);
             if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
         };
 
@@ -992,21 +1014,22 @@
             if (!snap.exists()) return;
             
             let history = snap.data().goalHistory || [];
-            const targetIdx = history.findIndex(function(h) { return h.dateStr === dateStr; });
+            const targetIdx = history.findIndex(function(h) { return h.dateStr === dateStr || h.day === dateStr; });
             if(targetIdx > -1) {
                 history[targetIdx].isCompleted = !history[targetIdx].isCompleted;
                 await updateDoc(userRef, { goalHistory: history });
                 showToast(history[targetIdx].isCompleted ? "목표 달성을 축하합니다! 🎉" : "목표 달성이 취소되었습니다.");
-                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
+                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab(true);
                 if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
             }
         };
 
-        // Personal 탭 동적 렌더링
+        // Personal 탭 완전 동적 렌더링 동기화
         window.renderPersonalTab = function(useLocalStats) {
             if(!myNick) return;
             const myData = publicUsers.find(function(u) { return u.id === myNick; }) || { weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots, goalHistory: [] };
             
+            // useLocalStats가 true면 타이머가 돌고 있는 로컬 변수값을 우선순위로 강제 적용
             const wSec = useLocalStats ? myWeeklySeconds : (myData.weeklySeconds || myWeeklySeconds);
             const tSlot = useLocalStats ? myTimeSlots : (myData.timeSlots || myTimeSlots);
             
@@ -1076,9 +1099,10 @@
                 document.getElementById('ps-goal-history-list').innerHTML = historyList.slice(0, 6).map(function(item) {
                     const isDone = item.isCompleted;
                     const dateTag = item.dateStr ? item.dateStr.slice(-5) : (item.day + '요일');
+                    const targetParam = item.dateStr ? item.dateStr : item.day;
                     
                     return '<div class="p-4 bg-gray-50 rounded-2xl border ' + (isDone ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-100') + ' flex items-start gap-3 transition-colors">' +
-                           '<input type="checkbox" ' + (isDone ? 'checked' : '') + ' onclick="window.toggleGoalCheck(\'' + item.dateStr + '\')" class="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer">' +
+                           '<input type="checkbox" ' + (isDone ? 'checked' : '') + ' onclick="window.toggleGoalCheck(\'' + targetParam + '\')" class="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer">' +
                            '<div><span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">' + dateTag + ' 목표</span>' +
                            '<p class="font-bold mt-2 text-base ' + (isDone ? 'goal-completed' : 'text-gray-900') + '">' + item.goal + '</p></div></div>';
                 }).join('');

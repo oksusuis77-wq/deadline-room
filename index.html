@@ -407,6 +407,10 @@
             return day === 0 ? 6 : day - 1; 
         }
 
+        function makeSafeId(str) {
+            return 'card_' + encodeURIComponent(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
         const dayNamesMap = ['월', '화', '수', '목', '금', '토', '일'];
 
         window.addEventListener('init-app', function(e) { myNick = e.detail; initFirebase(); });
@@ -467,11 +471,12 @@
                     await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp() });
                 } else {
                     dailySharedSeconds = data.dailySeconds || 0;
-                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, lastActive: serverTimestamp() });
+                    // 오차 보정: totalSeconds가 dailySeconds보다 작으면 강제 보정
+                    totalSharedSeconds = Math.max(data.totalSeconds || 0, dailySharedSeconds);
+                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, totalSeconds: totalSharedSeconds, lastActive: serverTimestamp() });
                 }
                 
                 if (data.goal) document.getElementById('room-goal-input').value = data.goal;
-                totalSharedSeconds = data.totalSeconds || dailySharedSeconds;
             }
             updateProgressUI();
             
@@ -482,14 +487,14 @@
                     if(data.id) publicUsers.push(data);
                 });
 
-                // 내 데이터의 로컬 메모리 동기화 (탭 간 연동 오류 해결)
+                // 내 데이터 로컬 메모리 보정 및 동기화 (단일 출처화)
                 const myDataSync = publicUsers.find(u => u.id === myNick);
                 if (myDataSync) {
                     if (myDataSync.dailySeconds !== undefined && !sharingInterval) {
                         dailySharedSeconds = myDataSync.dailySeconds;
                     }
                     if (myDataSync.totalSeconds !== undefined && !sharingInterval) {
-                        totalSharedSeconds = myDataSync.totalSeconds;
+                        totalSharedSeconds = Math.max(myDataSync.totalSeconds, dailySharedSeconds);
                     }
                     if (myDataSync.weeklySeconds) myWeeklySeconds = myDataSync.weeklySeconds;
                     if (myDataSync.timeSlots) myTimeSlots = myDataSync.timeSlots;
@@ -567,12 +572,14 @@
             stopTimeTracking();
         };
 
+        // 퇴장 작가 카드 자동 완전 삭제 (잔상 오류 수정 완료)
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
             const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
+            const validCardIds = new Set(others.map(function(u) { return makeSafeId(u.id); }));
             
             others.forEach(function(u) {
-                const safeId = 'card_' + encodeURIComponent(u.id).replace(/%/g, '_');
+                const safeId = makeSafeId(u.id);
                 let card = document.getElementById(safeId);
                 const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
                 
@@ -597,8 +604,10 @@
                     if (!u.isSharing) { if (vid) vid.remove(); if (layer) layer.style.display = 'flex'; }
                 }
             });
+
+            // 퇴장한 작가 DOM에서 완벽히 제거
             Array.from(grid.children).forEach(function(c) { 
-                if (!others.find(function(u) { return 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id; })) c.remove(); 
+                if (!validCardIds.has(c.id)) c.remove(); 
             });
         }
 
@@ -607,7 +616,7 @@
             const user = publicUsers.find(function(u) { return u.peerId === incomingId; });
             if(!user || !user.isSharing) return;
             
-            const card = document.getElementById('card_' + encodeURIComponent(user.id).replace(/%/g, '_'));
+            const card = document.getElementById(makeSafeId(user.id));
             if(!card) return;
             const layer = card.querySelector('.ui-layer'); if(layer) layer.style.display = 'none';
 
@@ -623,6 +632,7 @@
 
         function syncTimeToDB() {
             if (!myNick) return;
+            totalSharedSeconds = Math.max(totalSharedSeconds, dailySharedSeconds);
             updateDoc(doc(db, DB_COLLECTION, myNick), { 
                 dailySeconds: dailySharedSeconds, 
                 totalSeconds: totalSharedSeconds,
@@ -657,7 +667,9 @@
 
                     const d = new Date(now);
                     const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-                    myWeeklySeconds[dayKeys[get3AMDayIndex(d)]] += delta;
+                    const todayDayKey = dayKeys[get3AMDayIndex(d)];
+                    
+                    myWeeklySeconds[todayDayKey] = dailySharedSeconds;
 
                     const hour = d.getHours();
                     let slotKey = 'dawn';
@@ -673,7 +685,7 @@
                         window.renderPersonalTab(true);
                     }
 
-                    if (dailySharedSeconds % 10 === 0) {
+                    if (dailySharedSeconds % 5 === 0) {
                         syncTimeToDB();
                     }
                 }
@@ -696,7 +708,7 @@
             document.getElementById('progress-percent').textContent = Math.floor(percent) + '%';
         }
 
-        // 오늘의 목표 저장 (당일 덮어쓰기 & 새벽 3시 이후 신규 축적 로직 완벽 적용)
+        // 오늘의 목표 저장 (당일 덮어쓰기 완료)
         document.getElementById('btn-save-goal').onclick = async function() {
             const newGoal = document.getElementById('room-goal-input').value.trim();
             if (!myNick || !newGoal) return;
@@ -708,7 +720,6 @@
             const today3AM = get3AMDateString();
             const currentDayName = dayNamesMap[get3AMDayIndex()];
             
-            // 기존 히스토리에서 '오늘 새벽 3시 기준 날짜'와 일치하는 항목을 제외하고 새로 덮어쓰기
             history = history.filter(function(h) { return h.dateStr !== today3AM; });
             history.unshift({ dateStr: today3AM, day: currentDayName, goal: newGoal, isCompleted: false });
 
@@ -729,7 +740,6 @@
         let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
 
-        // 새로고침 상태 복원
         function loadPomoState() {
             try {
                 const savedSec = localStorage.getItem('pomo_sec');
@@ -875,11 +885,10 @@
             if(!isPomoRun) togglePomo();
         };
 
-        // 초기 뽀모도로 상태 복원 실행
         loadPomoState();
 
         // ==========================================
-        // Log 탭 렌더링 (산술적 정직한 결산 퍼센티지 산출)
+        // Log 탭 렌더링
         // ==========================================
         window.renderCommunityLog = function() {
             const todayIdx = get3AMDayIndex();
@@ -896,7 +905,7 @@
                 const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
                 const progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
                 
-                const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
+                const userTotalSec = Math.max(u.totalSeconds || 0, u.dailySeconds || 0);
                 const totalH = Math.floor(userTotalSec / 3600);
                 const totalM = Math.floor((userTotalSec % 3600) / 60);
 
@@ -958,11 +967,10 @@
             document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
 
             monthlyGridEl.innerHTML = publicUsers.map(function(u) {
-                const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
+                const userTotalSec = Math.max(u.totalSeconds || 0, u.dailySeconds || 0);
                 const totalH = Math.floor(userTotalSec / 3600);
                 const totalM = Math.floor((userTotalSec % 3600) / 60);
 
-                // 정직한 산술식: 누적 작업 시간 / (경과 일수 * 하루 목표 2시간)
                 const daysElapsed = Math.max(1, todayIdx + 1);
                 const expectedTargetSec = daysElapsed * GOAL_SECONDS;
                 const avgProgress = Math.min(100, Math.floor((userTotalSec / expectedTargetSec) * 100));
@@ -978,7 +986,6 @@
             }).join('') || '<div class="text-gray-400 col-span-full py-6 text-center">참여자가 없습니다.</div>';
         };
 
-        // 목표 체크 토글 (날짜 식별키 기준)
         window.toggleGoalCheck = async function(dateStr) {
             const userRef = doc(db, DB_COLLECTION, myNick);
             const snap = await getDoc(userRef);

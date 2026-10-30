@@ -58,7 +58,7 @@
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">마감방</h1>
             </div>
             
-            <!-- 네비게이션 탭 (Personal 추가) -->
+            <!-- 네비게이션 탭 -->
             <nav class="hidden md:flex items-center gap-10 text-lg">
                 <button class="nav-btn text-gray-900 font-bold border-b-2 border-gray-900 pb-1 transition-colors" data-target="tab-room">집필실</button>
                 <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1 transition-colors" data-target="tab-community">Log</button>
@@ -75,7 +75,7 @@
     <!-- 메인 컨텐츠 -->
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
         
-        <!-- 탭 1: 집필실 (기존과 동일) -->
+        <!-- 탭 1: 집필실 -->
         <section id="tab-room" class="tab-content active space-y-8">
             <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
                 <span class="text-gray-700 font-bold text-lg whitespace-nowrap sm:pl-2">오늘의 목표</span>
@@ -156,7 +156,7 @@
             </div>
         </section>
 
-        <!-- 탭 2: Log (기존과 동일) -->
+        <!-- 탭 2: Log -->
         <section id="tab-community" class="tab-content space-y-8">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
@@ -180,137 +180,124 @@
                     <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
                         <span>📊</span> 작가별 이번 달 결산 리포트
                     </h3>
-                    <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-xl" id="month-label">10월 현황</span>
+                    <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-xl" id="month-label">이번달 현황</span>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="monthly-author-grid"></div>
             </div>
         </section>
 
-        <!-- 탭 3: Personal (새로 추가됨) -->
+        <!-- 탭 3: Personal (동적 연동 완료) -->
         <section id="tab-personal" class="tab-content space-y-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
                     <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>이번 주 총 집필</span>
-                        <span class="text-xl">⏱️</span>
+                        <span>이번 주 총 집필</span><span class="text-xl">⏱️</span>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900">14시간 20분</div>
-                    <p class="text-xs text-emerald-600 font-bold mt-2">지난주 대비 +2시간 10분 📈</p>
+                    <div id="ps-total-time" class="text-3xl font-bold text-gray-900">0시간 0분</div>
+                    <p class="text-xs text-indigo-600 font-bold mt-2">차곡차곡 쌓이는 중 🔥</p>
                 </div>
                 <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
                     <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>일평균 집필</span>
-                        <span class="text-xl">📊</span>
+                        <span>일평균 집필</span><span class="text-xl">📊</span>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900">2시간 52분</div>
-                    <p class="text-xs text-gray-400 font-bold mt-2">목표(2시간) 달성 중 ✅</p>
+                    <div id="ps-avg-time" class="text-3xl font-bold text-gray-900">0시간 0분</div>
+                    <p id="ps-avg-msg" class="text-xs text-gray-400 font-bold mt-2">매일 꾸준히 해봐요!</p>
                 </div>
                 <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
                     <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>최고 마감 요일</span>
-                        <span class="text-xl">🔥</span>
+                        <span>최고 마감 요일</span><span class="text-xl">🔥</span>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900">수요일</div>
-                    <p class="text-xs text-indigo-600 font-bold mt-2">평균 3시간 40분 작업</p>
+                    <div id="ps-best-day" class="text-3xl font-bold text-gray-900">-</div>
+                    <p id="ps-best-day-msg" class="text-xs text-indigo-600 font-bold mt-2">데이터 수집 중</p>
                 </div>
                 <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
                     <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>집필 골든 타임</span>
-                        <span class="text-xl">🌙</span>
+                        <span>집필 골든 타임</span><span class="text-xl">🌙</span>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900">22시 ~ 01시</div>
-                    <p class="text-xs text-amber-600 font-bold mt-2">야간 몰입형 작가 타입</p>
+                    <div id="ps-golden-time" class="text-3xl font-bold text-gray-900">-</div>
+                    <p id="ps-golden-msg" class="text-xs text-amber-600 font-bold mt-2">데이터 수집 중</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 7일 차트 -->
                 <div class="lg:col-span-2 bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
                     <div class="flex justify-between items-center border-b border-gray-50 pb-4">
                         <h3 class="text-2xl font-bold text-gray-900">최근 7일 집필 기록</h3>
                         <span class="text-sm font-bold text-gray-400">단위: 시간</span>
                     </div>
                     <div class="flex items-end justify-between h-48 pt-6 px-4">
+                        <!-- 월~일 막대그래프 -->
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-gray-500">2.0h</span>
-                            <div class="w-8 bg-gray-200 rounded-xl h-[50%]"></div>
+                            <span id="ps-text-mon" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-mon" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
                             <span class="text-xs font-bold text-gray-400">월</span>
                         </div>
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-gray-500">1.5h</span>
-                            <div class="w-8 bg-gray-200 rounded-xl h-[38%]"></div>
+                            <span id="ps-text-tue" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-tue" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
                             <span class="text-xs font-bold text-gray-400">화</span>
                         </div>
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-indigo-600">3.7h</span>
-                            <div class="w-8 bg-indigo-600 rounded-xl h-[92%] shadow-md"></div>
-                            <span class="text-xs font-bold text-gray-900">수</span>
+                            <span id="ps-text-wed" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-wed" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">수</span>
                         </div>
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-gray-500">2.5h</span>
-                            <div class="w-8 bg-gray-200 rounded-xl h-[62%]"></div>
+                            <span id="ps-text-thu" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-thu" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
                             <span class="text-xs font-bold text-gray-400">목</span>
                         </div>
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-gray-500">3.0h</span>
-                            <div class="w-8 bg-gray-200 rounded-xl h-[75%]"></div>
+                            <span id="ps-text-fri" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-fri" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
                             <span class="text-xs font-bold text-gray-400">금</span>
                         </div>
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div class="w-8 bg-gray-100 rounded-xl h-[5%]"></div>
+                            <span id="ps-text-sat" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-sat" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
                             <span class="text-xs font-bold text-gray-400">토</span>
                         </div>
                         <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span class="text-xs font-bold text-gray-500">1.7h</span>
-                            <div class="w-8 bg-gray-200 rounded-xl h-[42%]"></div>
+                            <span id="ps-text-sun" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-sun" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
                             <span class="text-xs font-bold text-gray-400">일</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- 시간대 분포 -->
                 <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
                     <h3 class="text-2xl font-bold text-gray-900 border-b border-gray-50 pb-4">주요 작업 시간대</h3>
                     <div class="space-y-4">
                         <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">새벽 (00~06시)</span><span class="text-gray-900">35%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div class="bg-indigo-500 h-full rounded-full" style="width: 35%"></div></div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">새벽 (00~06시)</span><span id="ps-pct-dawn" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-dawn" class="bg-indigo-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오전 (06~12시)</span><span class="text-gray-900">10%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div class="bg-gray-300 h-full rounded-full" style="width: 10%"></div></div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오전 (06~12시)</span><span id="ps-pct-morning" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-morning" class="bg-amber-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오후 (12~18시)</span><span class="text-gray-900">15%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div class="bg-gray-300 h-full rounded-full" style="width: 15%"></div></div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오후 (12~18시)</span><span id="ps-pct-afternoon" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-afternoon" class="bg-emerald-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">야간 (18~24시)</span><span class="text-gray-900">40%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div class="bg-indigo-600 h-full rounded-full" style="width: 40%"></div></div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">야간 (18~24시)</span><span id="ps-pct-night" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-night" class="bg-indigo-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
                         </div>
                     </div>
-                    <div class="bg-indigo-50/60 p-4 rounded-2xl text-xs text-indigo-900 font-bold leading-relaxed">
-                        💡 **Insight:** 작가님은 밤 10시부터 새벽 1시 사이에 몰입도가 가장 높습니다.
+                    <div id="ps-insight-box" class="bg-indigo-50/60 p-4 rounded-2xl text-xs text-indigo-900 font-bold leading-relaxed">
+                        💡 **Insight:** 데이터를 모으고 있어요! 충분히 기록되면 맞춤형 팁을 드릴게요.
                     </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
                 <h3 class="text-2xl font-bold text-gray-900 border-b border-gray-50 pb-4">최근 나의 마감목표 성과</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">10월 24일 (수)</span>
-                        <p class="font-bold text-gray-900 mt-2 text-base">16화 초고 완성 및 퇴고</p>
-                        <span class="text-xs text-emerald-600 font-bold mt-1 block">✓ 3시간 40분 작업 (달성)</span>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">10월 23일 (화)</span>
-                        <p class="font-bold text-gray-900 mt-2 text-base">15화 중반부 플롯 수정</p>
-                        <span class="text-xs text-emerald-600 font-bold mt-1 block">✓ 2시간 10분 작업 (달성)</span>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <span class="text-xs font-bold text-gray-400 bg-gray-200 px-2 py-1 rounded-md">10월 22일 (월)</span>
-                        <p class="font-bold text-gray-900 mt-2 text-base">15화 전반부 집필</p>
-                        <span class="text-xs text-gray-400 font-bold mt-1 block">1시간 30분 작업 (미달성)</span>
+                <div id="ps-goal-history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-gray-400 text-sm col-span-full text-center">
+                        아직 기록된 목표가 없습니다. 오늘의 목표를 저장해보세요!
                     </div>
                 </div>
             </div>
@@ -344,6 +331,7 @@
                     btn.classList.remove('text-gray-400');
                     document.getElementById(btn.dataset.target).classList.add('active');
                     if (btn.dataset.target === 'tab-community' && window.renderCommunityLog) window.renderCommunityLog();
+                    if (btn.dataset.target === 'tab-personal' && window.renderPersonalTab) window.renderPersonalTab();
                 });
             });
             var saved = localStorage.getItem('deadline_room_nickname');
@@ -355,7 +343,7 @@
         });
     </script>
 
-    <!-- Firebase 및 통신 모듈 스크립트 (원래 코드 그대로 유지) -->
+    <!-- Firebase 및 통신 모듈 스크립트 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -365,6 +353,8 @@
         let app, auth, db, currentUser = null, publicUsers = [];
         let peer = null, myPeerId = null, currentCalls = {}, mediaStream = null, myNick = '';
         let dailySharedSeconds = 0, totalSharedSeconds = 0, sharingInterval = null, lastTick = null; 
+        let myWeeklySeconds = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
+        let myTimeSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
         const GOAL_SECONDS = 2 * 60 * 60;
         let lastResetDateStr = '';
 
@@ -399,7 +389,6 @@
             ];
 
             peer = new Peer({ config: { iceServers: customIceServers } });
-            
             peer.on('open', function(id) { myPeerId = id; initUserProfile(); });
 
             peer.on('call', function(call) {
@@ -414,22 +403,34 @@
             const snap = await getDoc(userRef);
             const today3AM = get3AMDateString();
             
+            const defaultWeekly = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
+            const defaultSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
+
             if (!snap.exists()) {
                 await setDoc(userRef, { 
                     id: myNick, nickname: myNick, peerId: myPeerId, goal: '', goalHistory: [],
                     dailySeconds: 0, totalSeconds: 0, warnings: 0, 
+                    weeklySeconds: defaultWeekly, timeSlots: defaultSlots,
                     lastResetDate: today3AM,
                     weeklyLogs: { mon: true, tue: true, wed: true, thu: true, fri: false, sat: false, sun: false },
                     lastActive: serverTimestamp(), isOnline: true, isSharing: false 
                 });
                 lastResetDateStr = today3AM;
+                myWeeklySeconds = defaultWeekly;
+                myTimeSlots = defaultSlots;
             } else {
                 const data = snap.data();
                 lastResetDateStr = data.lastResetDate || today3AM;
                 
+                // 기존 사용자라도 새 통계 필드가 없으면 초기화하여 오늘부터 누적
+                myWeeklySeconds = data.weeklySeconds || defaultWeekly;
+                myTimeSlots = data.timeSlots || defaultSlots;
+                
+                // 월요일 새벽 3시가 지났고 이번주 리셋이 아직 안되었다면 주간 데이터 초기화 로직 (현재는 생략/유지)
+
                 if (lastResetDateStr !== today3AM) {
                     dailySharedSeconds = 0; lastResetDateStr = today3AM;
-                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp() });
+                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp(), weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots });
                 } else {
                     dailySharedSeconds = data.dailySeconds || 0;
                     await updateDoc(userRef, { peerId: myPeerId, isOnline: true, lastActive: serverTimestamp() });
@@ -449,6 +450,7 @@
                 renderOtherUsers();
                 checkAndCallOthers();
                 if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
+                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
             });
         }
 
@@ -491,16 +493,12 @@
                 if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
                 
                 Object.values(currentCalls).forEach(function(c) { c.close(); });
-                currentCalls = {};
-                checkAndCallOthers();
+                currentCalls = {}; checkAndCallOthers();
             } catch (err) { showToast("권한이 거부되었습니다."); }
         };
 
         window.stopStream = function() {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(function(t) { t.stop(); });
-                mediaStream = null;
-            }
+            if (mediaStream) { mediaStream.getTracks().forEach(function(t) { t.stop(); }); mediaStream = null; }
             videoEl.classList.add('hidden-safely'); placeholder.classList.remove('hidden-safely');
             document.getElementById('btn-cam').classList.remove('hidden-safely'); document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely'); document.getElementById('live-indicator').classList.add('hidden-safely');
@@ -534,14 +532,11 @@
                     card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
                     card.querySelector('.status-dot').className = 'w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400');
                     
-                    const layer = card.querySelector('.ui-layer');
-                    const vid = card.querySelector('video.remote-video');
+                    const layer = card.querySelector('.ui-layer'); const vid = card.querySelector('video.remote-video');
                     if (!u.isSharing) { if (vid) vid.remove(); if (layer) layer.style.display = 'flex'; }
                 }
             });
-            Array.from(grid.children).forEach(function(c) { 
-                if (!others.find(function(u) { return 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id; })) c.remove(); 
-            });
+            Array.from(grid.children).forEach(function(c) { if (!others.find(function(u) { return 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id; })) c.remove(); });
         }
 
         function addRemoteVideo(incomingId, stream) {
@@ -577,8 +572,29 @@
 
                 const delta = Math.floor((now - lastTick) / 1000);
                 if (delta > 0) {
-                    dailySharedSeconds += delta; totalSharedSeconds += delta; lastTick += delta * 1000; updateProgressUI();
-                    if (dailySharedSeconds % 10 === 0 && myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { dailySeconds: dailySharedSeconds, totalSeconds: totalSharedSeconds });
+                    dailySharedSeconds += delta; totalSharedSeconds += delta; lastTick += delta * 1000;
+                    
+                    // 퍼스널 트래킹 데이터 갱신 (요일 및 시간대별 누적)
+                    const d = new Date(now);
+                    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                    const dayIdx = get3AMDayIndex(d);
+                    myWeeklySeconds[dayKeys[dayIdx]] += delta;
+
+                    const hour = d.getHours();
+                    let slotKey = 'dawn';
+                    if (hour >= 6 && hour < 12) slotKey = 'morning';
+                    else if (hour >= 12 && hour < 18) slotKey = 'afternoon';
+                    else if (hour >= 18) slotKey = 'night';
+                    myTimeSlots[slotKey] += delta;
+
+                    updateProgressUI();
+                    
+                    if (dailySharedSeconds % 10 === 0 && myNick) {
+                        updateDoc(doc(db, DB_COLLECTION, myNick), { 
+                            dailySeconds: dailySharedSeconds, totalSeconds: totalSharedSeconds,
+                            weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots
+                        });
+                    }
                 }
             }, 1000);
         }
@@ -654,8 +670,7 @@
             const monthlyGridEl = document.getElementById('monthly-author-grid');
 
             communityListEl.innerHTML = publicUsers.map(function(u) {
-                const warnCount = u.warnings || 0;
-                let heartsHtml = '';
+                const warnCount = u.warnings || 0; let heartsHtml = '';
                 for(let i = 0; i < 3; i++) heartsHtml += (i < (3 - warnCount)) ? '❤️ ' : '💔 ';
                 if(warnCount >= 3) heartsHtml = '<span class="text-red-500 font-bold">퇴출 완료</span>';
 
@@ -683,20 +698,92 @@
             }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
 
             const now = new Date(); document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
-
             monthlyGridEl.innerHTML = publicUsers.map(function(u) {
                 const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
                 const totalH = Math.floor(userTotalSec / 3600), totalM = Math.floor((userTotalSec % 3600) / 60);
                 const todayProgress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
                 const avgProgress = Math.min(Math.floor((400 + todayProgress) / 5), 100);
-
                 return '<div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4"><div class="flex items-center gap-3 border-b border-gray-200/60 pb-3"><div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">' + u.id.charAt(0) + '</div><span class="font-bold text-lg text-gray-900">' + u.id + ' 작가</span></div><div class="space-y-2 text-sm"><div class="flex justify-between items-center"><span class="text-gray-500 font-medium">이달의 총 작업 시간</span><span class="font-bold text-gray-900 text-base">' + totalH + '시간 ' + totalM + '분</span></div><div class="flex justify-between items-center"><span class="text-gray-500 font-medium">이달의 평균 달성률</span><span class="font-bold text-emerald-600 text-base">' + avgProgress + '%</span></div></div></div>';
             }).join('') || '<div class="text-gray-400 col-span-full py-6 text-center">참여자가 없습니다.</div>';
         };
 
-        window.addEventListener('beforeunload', function() { 
-            if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); 
-        });
+        // Personal 탭 동적 렌더링 함수
+        window.renderPersonalTab = function() {
+            if(!myNick) return;
+            const myData = publicUsers.find(function(u) { return u.id === myNick; });
+            if(!myData) return;
+
+            const wSec = myData.weeklySeconds || { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
+            const tSlot = myData.timeSlots || { dawn: 0, morning: 0, afternoon: 0, night: 0 };
+            
+            // 1. 요약 통계 계산
+            const totalWeekSec = Object.values(wSec).reduce(function(a, b) { return a + b; }, 0);
+            document.getElementById('ps-total-time').textContent = Math.floor(totalWeekSec/3600) + "시간 " + Math.floor((totalWeekSec%3600)/60) + "분";
+            
+            const currentDayIdx = get3AMDayIndex();
+            const avgSec = Math.floor(totalWeekSec / (currentDayIdx + 1));
+            document.getElementById('ps-avg-time').textContent = Math.floor(avgSec/3600) + "시간 " + Math.floor((avgSec%3600)/60) + "분";
+            if (avgSec >= GOAL_SECONDS) {
+                document.getElementById('ps-avg-msg').textContent = "목표(2시간) 달성 중 ✅"; document.getElementById('ps-avg-msg').className = "text-xs text-emerald-600 font-bold mt-2";
+            } else {
+                document.getElementById('ps-avg-msg').textContent = "조금만 더 힘내봐요!"; document.getElementById('ps-avg-msg').className = "text-xs text-gray-400 font-bold mt-2";
+            }
+
+            const dayNames = { mon: '월요일', tue: '화요일', wed: '수요일', thu: '목요일', fri: '금요일', sat: '토요일', sun: '일요일' };
+            let maxDay = '', maxDaySec = -1;
+            for(let key in wSec) { if(wSec[key] > maxDaySec) { maxDaySec = wSec[key]; maxDay = dayNames[key]; } }
+            if (maxDaySec > 0) {
+                document.getElementById('ps-best-day').textContent = maxDay;
+                document.getElementById('ps-best-day-msg').textContent = "평균 " + Math.floor(maxDaySec/3600) + "시간 " + Math.floor((maxDaySec%3600)/60) + "분 작업";
+            }
+
+            const slotNames = { dawn: '00시 ~ 06시', morning: '06시 ~ 12시', afternoon: '12시 ~ 18시', night: '18시 ~ 24시' };
+            const slotTraits = { dawn: '새벽 고요 집중형', morning: '아침을 여는 상쾌형', afternoon: '오후 에너지 활기형', night: '야간 몰입형 작가' };
+            let maxSlot = '', maxSlotSec = -1;
+            for(let key in tSlot) { if(tSlot[key] > maxSlotSec) { maxSlotSec = tSlot[key]; maxSlot = key; } }
+            if (maxSlotSec > 0) {
+                document.getElementById('ps-golden-time').textContent = slotNames[maxSlot];
+                document.getElementById('ps-golden-msg').textContent = slotTraits[maxSlot] + " 타입";
+                document.getElementById('ps-insight-box').innerHTML = "💡 **Insight:** 작가님은 " + slotNames[maxSlot].split('~')[0].trim() + "대 주변에 몰입도가 가장 높습니다. 이 시간에 중요한 장면을 집필해 보세요!";
+            }
+
+            // 2. 7일 막대 그래프 반영
+            const maxExpectedSec = Math.max(5 * 3600, maxDaySec); // 최소 5시간 기준 비율, 그 이상이면 유동적 비율
+            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(function(dKey) {
+                const sec = wSec[dKey];
+                const pct = Math.max(5, Math.min((sec / maxExpectedSec) * 100, 100));
+                document.getElementById('ps-text-' + dKey).textContent = (sec/3600).toFixed(1) + "h";
+                document.getElementById('ps-bar-' + dKey).style.height = pct + "%";
+                
+                // 최고기록 요일 스타일 강조
+                if(sec === maxDaySec && sec > 0) {
+                    document.getElementById('ps-bar-' + dKey).className = "w-8 bg-indigo-600 rounded-xl transition-all duration-700 shadow-md";
+                    document.getElementById('ps-text-' + dKey).className = "text-xs font-bold text-indigo-600";
+                } else {
+                    document.getElementById('ps-bar-' + dKey).className = "w-8 bg-gray-200 rounded-xl transition-all duration-700";
+                    document.getElementById('ps-text-' + dKey).className = "text-xs font-bold text-gray-500";
+                }
+            });
+
+            // 3. 주요 시간대 분포 반영
+            const totalSlots = Object.values(tSlot).reduce(function(a, b) { return a + b; }, 0) || 1; 
+            ['dawn', 'morning', 'afternoon', 'night'].forEach(function(sKey) {
+                const pct = Math.floor((tSlot[sKey] / totalSlots) * 100);
+                document.getElementById('ps-pct-' + sKey).textContent = pct + "%";
+                document.getElementById('ps-bar-' + sKey).style.width = pct + "%";
+            });
+
+            // 4. 최근 목표 히스토리 반영
+            const historyList = myData.goalHistory || [];
+            if(historyList.length > 0) {
+                document.getElementById('ps-goal-history-list').innerHTML = historyList.slice(0, 6).map(function(item) {
+                    return '<div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">' +
+                           '<span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">' + item.day + '요일 마감</span>' +
+                           '<p class="font-bold text-gray-900 mt-2 text-base">' + item.goal + '</p></div>';
+                }).join('');
+            }
+        };
+
     </script>
 </body>
 </html>

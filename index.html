@@ -12,19 +12,23 @@
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
             font-weight: normal; font-style: normal; font-display: swap;
         }
-        body { font-family: 'LeeSeoyun', -apple-system, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.15rem; }
+        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.15rem; }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
+
         .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
         .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.03); }
+        
         .tab-content { display: none; opacity: 0; transition: opacity 0.4s ease; }
         .tab-content.active { display: block; opacity: 1; }
+        
         .video-blur { filter: blur(4px) brightness(0.95); }
         .hidden-safely { display: none !important; }
         .goal-completed { text-decoration: line-through; color: #9CA3AF; }
-        
-        /* 토마토 통통 튀는 애니메이션 */
+
         @keyframes popIn {
             0% { transform: scale(0); opacity: 0; }
             50% { transform: scale(1.3); }
@@ -35,14 +39,12 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-gray-200 overflow-hidden">
 
-    <!-- 다같이 뽀모 초대 모달 -->
+    <!-- 다같이 뽀모 모달 -->
     <div id="group-pomo-modal" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[70] hidden-safely flex items-center justify-center">
         <div class="bg-white rounded-3xl p-6 card-shadow max-w-sm w-full mx-4">
             <h3 class="text-xl font-bold text-gray-900 mb-1">다같이 뽀모 시작</h3>
             <p class="text-sm text-gray-500 mb-4">함께 집중할 작가님을 선택하세요.</p>
-            <div id="group-pomo-user-list" class="max-h-48 overflow-y-auto space-y-2 mb-6 p-1">
-                <!-- JS에서 동료 목록 렌더링 -->
-            </div>
+            <div id="group-pomo-user-list" class="max-h-48 overflow-y-auto space-y-2 mb-6 p-1"></div>
             <div class="flex gap-3">
                 <button onclick="document.getElementById('group-pomo-modal').classList.add('hidden-safely')" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">취소</button>
                 <button onclick="window.startGroupPomo()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-md">함께 시작!</button>
@@ -55,7 +57,7 @@
         <div class="bg-white rounded-3xl p-8 card-shadow max-w-md w-full mx-4 text-center">
             <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
             <h2 class="text-3xl font-bold text-gray-900 mb-2">마감방 입장</h2>
-            <div class="space-y-4 mt-6">
+            <div class="space-y-4 mt-4">
                 <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-xl focus:ring-2 focus:ring-gray-900 outline-none font-bold text-gray-900" placeholder="닉네임 (예: 김작가)" onkeyup="if(event.key==='Enter') window.doLogin()">
                 <button type="button" onclick="window.doLogin()" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-xl hover:bg-gray-800 transition-colors shadow-lg cursor-pointer">입장하기</button>
             </div>
@@ -64,24 +66,26 @@
 
     <!-- 토스트 알림 -->
     <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[60] hidden-safely transition-all duration-300">
-        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium flex items-center gap-2"></div>
+        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-base flex items-center gap-2"></div>
     </div>
 
     <!-- 헤더 -->
     <header class="glass-header sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-xl leading-none">M</div>
-                <h1 class="text-2xl font-bold text-gray-900">마감방</h1>
+                <div class="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-xl leading-none shadow-sm">M</div>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">마감방</h1>
             </div>
+            
             <nav class="hidden md:flex items-center gap-10 text-lg">
-                <button class="nav-btn text-gray-900 font-bold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1" data-target="tab-community">Log</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1" data-target="tab-personal">Personal</button>
+                <button class="nav-btn text-gray-900 font-bold border-b-2 border-gray-900 pb-1 transition-colors" data-target="tab-room">집필실</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1 transition-colors" data-target="tab-community">Log</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1 transition-colors" data-target="tab-personal">Personal</button>
             </nav>
+
             <div class="flex items-center gap-3">
                 <div id="auth-status" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
-                <span id="user-info" class="text-sm text-gray-600 font-bold hidden md:block">대기중...</span>
+                <span id="user-info" class="text-sm text-gray-600 font-bold hidden md:block">연결 대기중...</span>
             </div>
         </div>
     </header>
@@ -93,7 +97,7 @@
         <section id="tab-room" class="tab-content active space-y-8">
             <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
                 <span class="text-gray-700 font-bold text-lg whitespace-nowrap sm:pl-2">오늘의 목표</span>
-                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 px-2 text-center sm:text-left text-lg font-medium" placeholder="예: 15화 초고 완성">
+                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 px-2 text-center sm:text-left text-lg font-medium" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
                 <button id="btn-save-goal" class="w-full sm:w-auto px-8 py-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-colors font-bold cursor-pointer text-base">저장</button>
             </div>
 
@@ -105,22 +109,25 @@
                             <h2 class="text-3xl font-bold text-gray-900">함께 마감하는 집필실</h2>
                             <p class="text-gray-500 text-base mt-1">서로의 마감을 응원합니다</p>
                         </div>
+                        
                         <div class="flex items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100">
-                            <label class="flex items-center gap-2 px-3 text-base cursor-pointer text-gray-700">
-                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 text-gray-900" checked> <span class="font-bold">모자이크</span>
+                            <label class="flex items-center gap-2 px-3 text-base cursor-pointer text-gray-700 hover:text-gray-900">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900 focus:ring-gray-900" checked>
+                                <span class="font-bold">모자이크</span>
                             </label>
                             <div class="w-px h-6 bg-gray-200"></div>
-                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold">웹캠</button>
-                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold">화면공유</button>
-                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-5 py-2.5 bg-red-50 text-red-600 rounded-xl font-bold">중지</button>
+                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-base font-bold cursor-pointer">웹캠</button>
+                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-base font-bold cursor-pointer">화면공유</button>
+                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-base font-bold cursor-pointer">중지</button>
                         </div>
                     </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
                         <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] flex items-center justify-center">
                             <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-40" autoplay playsinline muted></video>
                             <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
                                 <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-4 text-gray-400 font-bold text-3xl">나</div>
-                                <p class="text-base font-bold text-gray-400">화면 대기중</p>
+                                <p class="text-base font-bold text-gray-400">내 화면 대기중</p>
                             </div>
                             <div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">
                                 <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
@@ -131,13 +138,12 @@
                     </div>
                 </div>
 
-                <!-- 타이머 & 뽀모도로 -->
+                <!-- 타이머 & 뽀모도로 영역 -->
                 <div class="lg:w-1/3 flex flex-col gap-6">
-                    <!-- 하루 2시간 챌린지 -->
                     <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-xl text-gray-900">하루 2시간 챌린지</h3>
-                            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">AM 03:00 리셋</span>
+                            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">매일 AM 03:00 리셋</span>
                         </div>
                         <div class="flex justify-between items-end mb-2">
                             <span class="text-3xl font-light text-gray-900 daily-time-display">00:00:00</span>
@@ -147,17 +153,14 @@
                             <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-1000 w-0"></div>
                         </div>
                     </div>
-                    
-                    <!-- 업그레이드 뽀모도로 영역 (콤팩트 사이즈) -->
+
                     <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 text-center relative overflow-hidden flex-1 flex flex-col justify-center min-h-[260px]">
-                        <!-- 음소거 토글 버튼 -->
                         <button id="btn-pomo-mute" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors z-20" title="알림음 켜기/끄기">
                             <span id="pomo-sound-icon" class="text-xl">🔊</span>
                         </button>
                         
                         <div class="absolute inset-0 bg-gray-50 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear" id="pomo-bg-fill" style="z-index: 0;"></div>
                         <div class="relative z-10">
-                            <!-- 개인 / 다같이 뽀모 토글 -->
                             <div class="flex justify-center gap-1 mb-4 bg-gray-100 p-1 rounded-full w-max mx-auto border border-gray-200/50 shadow-inner">
                                 <button id="pomo-type-personal" class="px-4 py-1 rounded-full text-xs font-bold bg-white text-gray-900 shadow-sm transition-all duration-300">개인 뽀모</button>
                                 <button id="pomo-type-group" class="px-4 py-1 rounded-full text-xs font-bold text-gray-400 hover:text-gray-700 transition-all duration-300">다같이 뽀모</button>
@@ -177,7 +180,6 @@
                                 </button>
                             </div>
 
-                            <!-- 수집된 토마토 영역 -->
                             <div id="tomato-container" class="flex flex-wrap justify-center gap-1 min-h-[28px] text-xl"></div>
                         </div>
                     </div>
@@ -203,7 +205,9 @@
                     </ul>
                 </div>
             </div>
+
             <div class="grid grid-cols-1 gap-8" id="community-list"></div>
+
             <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6 mt-12">
                 <div class="flex items-center justify-between border-b border-gray-100 pb-4">
                     <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -218,41 +222,157 @@
         <!-- 탭 3: Personal -->
         <section id="tab-personal" class="tab-content space-y-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100"><div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2"><span>이번 주 총 집필</span><span class="text-xl">⏱️</span></div><div id="ps-total-time" class="text-3xl font-bold text-gray-900">0시간 0분</div></div>
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100"><div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2"><span>일평균 집필</span><span class="text-xl">📊</span></div><div id="ps-avg-time" class="text-3xl font-bold text-gray-900">0시간 0분</div></div>
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100"><div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2"><span>최고 마감 요일</span><span class="text-xl">🔥</span></div><div id="ps-best-day" class="text-3xl font-bold text-gray-900">-</div></div>
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100"><div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2"><span>집필 골든 타임</span><span class="text-xl">🌙</span></div><div id="ps-golden-time" class="text-3xl font-bold text-gray-900">-</div></div>
+                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
+                        <span>이번 주 총 집필</span><span class="text-xl">⏱️</span>
+                    </div>
+                    <div id="ps-total-time" class="text-3xl font-bold text-gray-900">0시간 0분</div>
+                    <p class="text-xs text-indigo-600 font-bold mt-2">차곡차곡 쌓이는 중 🔥</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
+                        <span>일평균 집필</span><span class="text-xl">📊</span>
+                    </div>
+                    <div id="ps-avg-time" class="text-3xl font-bold text-gray-900">0시간 0분</div>
+                    <p id="ps-avg-msg" class="text-xs text-gray-400 font-bold mt-2">매일 꾸준히 해봐요!</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
+                        <span>최고 마감 요일</span><span class="text-xl">🔥</span>
+                    </div>
+                    <div id="ps-best-day" class="text-3xl font-bold text-gray-900">-</div>
+                    <p id="ps-best-day-msg" class="text-xs text-indigo-600 font-bold mt-2">데이터 수집 중</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
+                        <span>집필 골든 타임</span><span class="text-xl">🌙</span>
+                    </div>
+                    <div id="ps-golden-time" class="text-3xl font-bold text-gray-900">-</div>
+                    <p id="ps-golden-msg" class="text-xs text-amber-600 font-bold mt-2">데이터 수집 중</p>
+                </div>
             </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
-                    <h3 class="text-2xl font-bold text-gray-900 border-b border-gray-50 pb-4">최근 7일 집필 기록</h3>
+                    <div class="flex justify-between items-center border-b border-gray-50 pb-4">
+                        <h3 class="text-2xl font-bold text-gray-900">최근 7일 집필 기록</h3>
+                        <span class="text-sm font-bold text-gray-400">단위: 시간</span>
+                    </div>
                     <div class="flex items-end justify-between h-48 pt-6 px-4">
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-mon" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-mon" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">월</span></div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-tue" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-tue" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">화</span></div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-wed" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-wed" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">수</span></div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-thu" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-thu" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">목</span></div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-fri" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-fri" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">금</span></div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-sat" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-sat" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">토</span></div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end"><span id="ps-text-sun" class="text-xs font-bold text-gray-400">0.0h</span><div id="ps-bar-sun" class="w-8 bg-gray-100 rounded-xl" style="height: 5%;"></div><span class="text-xs">일</span></div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-mon" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-mon" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">월</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-tue" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-tue" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">화</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-wed" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-wed" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">수</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-thu" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-thu" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">목</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-fri" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-fri" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">금</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-sat" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-sat" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">토</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2 h-full justify-end">
+                            <span id="ps-text-sun" class="text-xs font-bold text-gray-400">0.0h</span>
+                            <div id="ps-bar-sun" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
+                            <span class="text-xs font-bold text-gray-400">일</span>
+                        </div>
                     </div>
                 </div>
+
                 <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
                     <h3 class="text-2xl font-bold text-gray-900 border-b border-gray-50 pb-4">주요 작업 시간대</h3>
                     <div class="space-y-4">
-                        <div><div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">새벽</span><span id="ps-pct-dawn" class="text-gray-900">0%</span></div><div class="w-full bg-gray-100 h-3 rounded-full"><div id="ps-bar-dawn" class="bg-indigo-500 h-full rounded-full" style="width: 0%"></div></div></div>
-                        <div><div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오전</span><span id="ps-pct-morning" class="text-gray-900">0%</span></div><div class="w-full bg-gray-100 h-3 rounded-full"><div id="ps-bar-morning" class="bg-amber-400 h-full rounded-full" style="width: 0%"></div></div></div>
-                        <div><div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오후</span><span id="ps-pct-afternoon" class="text-gray-900">0%</span></div><div class="w-full bg-gray-100 h-3 rounded-full"><div id="ps-bar-afternoon" class="bg-emerald-400 h-full rounded-full" style="width: 0%"></div></div></div>
-                        <div><div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">야간</span><span id="ps-pct-night" class="text-gray-900">0%</span></div><div class="w-full bg-gray-100 h-3 rounded-full"><div id="ps-bar-night" class="bg-indigo-600 h-full rounded-full" style="width: 0%"></div></div></div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">새벽 (00~06시)</span><span id="ps-pct-dawn" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-dawn" class="bg-indigo-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오전 (06~12시)</span><span id="ps-pct-morning" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-morning" class="bg-amber-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오후 (12~18시)</span><span id="ps-pct-afternoon" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-afternoon" class="bg-emerald-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">야간 (18~24시)</span><span id="ps-pct-night" class="text-gray-900">0%</span></div>
+                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-night" class="bg-indigo-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+                    <div id="ps-insight-box" class="bg-indigo-50/60 p-4 rounded-2xl text-xs text-indigo-900 font-bold leading-relaxed">
+                        💡 **Insight:** 데이터를 모으고 있어요! 충분히 기록되면 맞춤형 팁을 드릴게요.
                     </div>
                 </div>
             </div>
+
             <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
-                <div class="flex items-center justify-between border-b border-gray-50 pb-4"><h3 class="text-2xl font-bold text-gray-900">나의 마감 성과</h3><span class="text-sm text-gray-400">목표 달성 시 체크해주세요!</span></div>
+                <div class="flex items-center justify-between border-b border-gray-50 pb-4">
+                    <h3 class="text-2xl font-bold text-gray-900">나의 마감 성과</h3>
+                    <span class="text-sm text-gray-400">목표 달성 시 체크해주세요!</span>
+                </div>
                 <div id="ps-goal-history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </div>
         </section>
     </main>
 
+    <!-- UI 및 탭 제어 스크립트 -->
+    <script>
+        window.myNickname = '';
+        function showToast(msg) {
+            var el = document.getElementById('toast-message'), container = document.getElementById('toast-container');
+            if(el && container) { el.textContent = msg; container.classList.remove('hidden-safely'); setTimeout(function(){ container.classList.add('hidden-safely'); }, 3000); }
+        }
+        window.doLogin = function() {
+            var input = document.getElementById('nickname-input');
+            var val = input ? input.value.trim() : '';
+            if (!val) return;
+            window.myNickname = val;
+            localStorage.setItem('deadline_room_nickname', val);
+            document.getElementById('login-overlay').style.setProperty('display', 'none', 'important');
+            document.body.classList.remove('overflow-hidden');
+            window.dispatchEvent(new CustomEvent('init-app', { detail: val }));
+        };
+        document.addEventListener('DOMContentLoaded', function() {
+            var navBtns = document.querySelectorAll('.nav-btn'), tabContents = document.querySelectorAll('.tab-content');
+            navBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    navBtns.forEach(function(b) { b.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900'); b.classList.add('text-gray-400'); });
+                    tabContents.forEach(function(c) { c.classList.remove('active'); });
+                    btn.classList.add('text-gray-900', 'border-b-2', 'border-gray-900');
+                    btn.classList.remove('text-gray-400');
+                    document.getElementById(btn.dataset.target).classList.add('active');
+                    if (btn.dataset.target === 'tab-community' && window.renderCommunityLog) window.renderCommunityLog();
+                    if (btn.dataset.target === 'tab-personal' && window.renderPersonalTab) window.renderPersonalTab();
+                });
+            });
+            var saved = localStorage.getItem('deadline_room_nickname');
+            if (saved) { 
+                var input = document.getElementById('nickname-input');
+                if(input) input.value = saved; 
+                window.doLogin(); 
+            }
+        });
+    </script>
+
+    <!-- Firebase 및 통신 모듈 스크립트 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -260,15 +380,16 @@
 
         const firebaseConfig = { apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", authDomain: "deadline-room-768bf.firebaseapp.com", projectId: "deadline-room-768bf" };
         let app, auth, db, currentUser = null, publicUsers = [];
-        let myNick = '', peer = null, myPeerId = null, currentCalls = {}, mediaStream = null;
+        let peer = null, myPeerId = null, currentCalls = {}, mediaStream = null, myNick = '';
         let dailySharedSeconds = 0, totalSharedSeconds = 0, sharingInterval = null, lastTick = null; 
         let myWeeklySeconds = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
         let myTimeSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
         const GOAL_SECONDS = 2 * 60 * 60;
         let lastResetDateStr = '';
+
         const DB_COLLECTION = 'artifacts/app/users';
 
-        // 뽀모도로 및 사운드 변수
+        // 뽀모도로 사운드 및 변수
         const pomoAlarmSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         let isPomoMuted = false;
         let lastPomoTriggerTime = 0;
@@ -278,98 +399,90 @@
             d.setHours(d.getHours() - 3);
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
+
         function get3AMDayIndex(dateObj) {
             const d = dateObj ? new Date(dateObj) : new Date();
             d.setHours(d.getHours() - 3);
-            const day = d.getDay(); return day === 0 ? 6 : day - 1; 
-        }
-        function showToast(msg) {
-            const el = document.getElementById('toast-message'), container = document.getElementById('toast-container');
-            if(el && container) { el.textContent = msg; container.classList.remove('hidden-safely'); setTimeout(() => container.classList.add('hidden-safely'), 4000); }
+            const day = d.getDay(); 
+            return day === 0 ? 6 : day - 1; 
         }
 
-        window.doLogin = function() {
-            const val = document.getElementById('nickname-input').value.trim();
-            if (!val) return;
-            myNick = val; localStorage.setItem('deadline_room_nickname', val);
-            document.getElementById('login-overlay').style.setProperty('display', 'none', 'important');
-            document.body.classList.remove('overflow-hidden');
-            initFirebase();
-        };
+        const dayNamesMap = ['월', '화', '수', '목', '금', '토', '일'];
 
-        const saved = localStorage.getItem('deadline_room_nickname');
-        if (saved) { document.getElementById('nickname-input').value = saved; window.doLogin(); }
-
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900'); b.classList.add('text-gray-400'); });
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('text-gray-900', 'border-b-2', 'border-gray-900'); btn.classList.remove('text-gray-400');
-                document.getElementById(btn.dataset.target).classList.add('active');
-                if(btn.dataset.target === 'tab-personal') window.renderPersonalTab();
-            });
-        });
+        window.addEventListener('init-app', function(e) { myNick = e.detail; initFirebase(); });
 
         async function initFirebase() {
             app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
-            await signInAnonymously(auth);
+            const cred = await signInAnonymously(auth); currentUser = cred.user;
+            
             document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-            document.getElementById('user-info').textContent = myNick + ' (접속됨)';
+            document.getElementById('user-info').textContent = myNick + ' (온라인)';
             
             const customIceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'turn:global.relay.metered.ca:80', username: 'b3b66b02e8b3db0c7fb62dcd', credential: 'UUa43LGXDD4OzNKa' },
                 { urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'b3b66b02e8b3db0c7fb62dcd', credential: 'UUa43LGXDD4OzNKa' }
             ];
-            peer = new Peer({ config: { iceServers: customIceServers } });
-            peer.on('open', async function(id) {
-                myPeerId = id;
-                const userRef = doc(db, DB_COLLECTION, myNick);
-                const snap = await getDoc(userRef);
-                const today3AM = get3AMDateString();
-                const defaultWeekly = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
-                const defaultSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
 
-                if (!snap.exists()) {
-                    await setDoc(userRef, { 
-                        id: myNick, goalHistory: [], dailySeconds: 0, totalSeconds: 0, peerId: myPeerId,
-                        weeklySeconds: defaultWeekly, timeSlots: defaultSlots,
-                        pomoTrigger: 0, lastResetDate: today3AM, isOnline: true
-                    });
-                    lastResetDateStr = today3AM; myWeeklySeconds = defaultWeekly; myTimeSlots = defaultSlots;
-                } else {
-                    const data = snap.data();
-                    lastResetDateStr = data.lastResetDate || today3AM;
-                    myWeeklySeconds = data.weeklySeconds || defaultWeekly;
-                    myTimeSlots = data.timeSlots || defaultSlots;
-                    if (data.pomoTrigger) lastPomoTriggerTime = data.pomoTrigger;
-                    
-                    if (lastResetDateStr !== today3AM) {
-                        dailySharedSeconds = 0; lastResetDateStr = today3AM;
-                        await updateDoc(userRef, { peerId: myPeerId, dailySeconds: 0, lastResetDate: today3AM, isOnline: true });
-                    } else {
-                        dailySharedSeconds = data.dailySeconds || 0;
-                        await updateDoc(userRef, { peerId: myPeerId, isOnline: true });
-                    }
-                    const latestGoal = (data.goalHistory && data.goalHistory.length > 0) ? data.goalHistory[0].goal : '';
-                    document.getElementById('room-goal-input').value = latestGoal;
-                }
-                updateProgressUI();
-                window.renderPersonalTab();
-            });
+            peer = new Peer({ config: { iceServers: customIceServers } });
+            
+            peer.on('open', function(id) { myPeerId = id; initUserProfile(); });
 
             peer.on('call', function(call) {
                 call.answer(mediaStream || undefined);
                 currentCalls[call.peer] = call;
                 call.on('stream', function(stream) { addRemoteVideo(call.peer, stream); });
             });
+        }
 
-            // 실시간 리스너 (공유, 뽀모 동기화)
-            onSnapshot(collection(db, DB_COLLECTION), snap => {
-                publicUsers = []; 
-                snap.forEach(d => publicUsers.push(d.data()));
+        async function initUserProfile() {
+            const userRef = doc(db, DB_COLLECTION, myNick);
+            const snap = await getDoc(userRef);
+            const today3AM = get3AMDateString();
+            
+            const defaultWeekly = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
+            const defaultSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
+
+            if (!snap.exists()) {
+                await setDoc(userRef, { 
+                    id: myNick, nickname: myNick, peerId: myPeerId, goal: '', goalHistory: [],
+                    dailySeconds: 0, totalSeconds: 0, warnings: 0, 
+                    weeklySeconds: defaultWeekly, timeSlots: defaultSlots, pomoTrigger: 0,
+                    lastResetDate: today3AM,
+                    weeklyLogs: { mon: true, tue: true, wed: true, thu: true, fri: false, sat: false, sun: false },
+                    lastActive: serverTimestamp(), isOnline: true, isSharing: false 
+                });
+                lastResetDateStr = today3AM;
+                myWeeklySeconds = defaultWeekly;
+                myTimeSlots = defaultSlots;
+            } else {
+                const data = snap.data();
+                lastResetDateStr = data.lastResetDate || today3AM;
+                myWeeklySeconds = data.weeklySeconds || defaultWeekly;
+                myTimeSlots = data.timeSlots || defaultSlots;
+                if (data.pomoTrigger) lastPomoTriggerTime = data.pomoTrigger;
                 
-                // 다같이 뽀모 수신 체크 로직
+                if (lastResetDateStr !== today3AM) {
+                    dailySharedSeconds = 0; lastResetDateStr = today3AM;
+                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp() });
+                } else {
+                    dailySharedSeconds = data.dailySeconds || 0;
+                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, lastActive: serverTimestamp() });
+                }
+                
+                if (data.goal) document.getElementById('room-goal-input').value = data.goal;
+                totalSharedSeconds = data.totalSeconds || dailySharedSeconds;
+            }
+            updateProgressUI();
+            
+            onSnapshot(collection(db, DB_COLLECTION), function(snap) {
+                publicUsers = [];
+                snap.forEach(function(d) {
+                    const data = d.data();
+                    if(data.id) publicUsers.push(data);
+                });
+
+                // 다같이 뽀모 수신 신호 수신 동기화
                 const myDataSync = publicUsers.find(u => u.id === myNick);
                 if (myDataSync && myDataSync.pomoTrigger && myDataSync.pomoTrigger > lastPomoTriggerTime) {
                     lastPomoTriggerTime = myDataSync.pomoTrigger;
@@ -380,27 +493,34 @@
 
                 renderOtherUsers();
                 checkAndCallOthers();
-                if(document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
-                if(document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
+                if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
+                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
             });
         }
 
-        // --- 기타 화면 공유, 타이머 함수 생략 없이 완벽 유지 ---
         function checkAndCallOthers() {
             if (!myPeerId || !peer) return;
-            const others = publicUsers.filter(u => u.id !== myNick && u.isOnline && u.peerId);
-            others.forEach(u => {
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline && u.peerId; });
+            others.forEach(function(u) {
                 if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
                     const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
-                    if (call) { currentCalls[u.peerId] = call; call.on('stream', stream => addRemoteVideo(u.peerId, stream)); }
+                    if (call) {
+                        currentCalls[u.peerId] = call;
+                        call.on('stream', function(stream) { addRemoteVideo(u.peerId, stream); });
+                    }
                 }
             });
         }
-        
+
         const videoEl = document.getElementById('video-element'), placeholder = document.getElementById('video-placeholder');
-        document.getElementById('blur-toggle').addEventListener('change', e => {
-            if (e.target.checked) { videoEl.classList.add('video-blur'); document.querySelectorAll('.remote-video').forEach(v => v.classList.add('video-blur')); }
-            else { videoEl.classList.remove('video-blur'); document.querySelectorAll('.remote-video').forEach(v => v.classList.remove('video-blur')); }
+        document.getElementById('blur-toggle').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                videoEl.classList.add('video-blur');
+                document.querySelectorAll('.remote-video').forEach(function(v) { v.classList.add('video-blur'); });
+            } else {
+                videoEl.classList.remove('video-blur');
+                document.querySelectorAll('.remote-video').forEach(function(v) { v.classList.remove('video-blur'); });
+            }
         });
 
         window.startStream = async function(type) {
@@ -413,108 +533,183 @@
                 document.getElementById('btn-stop').classList.remove('hidden-safely'); document.getElementById('live-indicator').classList.remove('hidden-safely');
                 
                 mediaStream.getVideoTracks()[0].onended = window.stopStream;
-                showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
+                startTimeTracking(); showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
                 if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
                 
-                Object.values(currentCalls).forEach(c => c.close()); currentCalls = {}; checkAndCallOthers();
-                
-                if(!sharingInterval) {
-                    lastTick = Date.now();
-                    sharingInterval = setInterval(() => {
-                        const now = Date.now(); const delta = Math.floor((now - lastTick) / 1000);
-                        if (delta > 0) {
-                            dailySharedSeconds += delta; totalSharedSeconds += delta; lastTick += delta * 1000;
-                            const d = new Date(now);
-                            const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-                            myWeeklySeconds[dayKeys[get3AMDayIndex(d)]] += delta;
-
-                            const hour = d.getHours(); let slotKey = 'dawn';
-                            if (hour >= 6 && hour < 12) slotKey = 'morning';
-                            else if (hour >= 12 && hour < 18) slotKey = 'afternoon';
-                            else if (hour >= 18) slotKey = 'night';
-                            myTimeSlots[slotKey] += delta;
-
-                            updateProgressUI();
-                            if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab(true);
-                            if (dailySharedSeconds % 10 === 0) updateDoc(doc(db, DB_COLLECTION, myNick), { dailySeconds: dailySharedSeconds, weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots });
-                        }
-                    }, 1000);
-                }
+                Object.values(currentCalls).forEach(function(c) { c.close(); });
+                currentCalls = {};
+                checkAndCallOthers();
             } catch (err) { showToast("권한이 거부되었습니다."); }
         };
 
         window.stopStream = function() {
-            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(function(t) { t.stop(); });
+                mediaStream = null;
+            }
             videoEl.classList.add('hidden-safely'); placeholder.classList.remove('hidden-safely');
             document.getElementById('btn-cam').classList.remove('hidden-safely'); document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely'); document.getElementById('live-indicator').classList.add('hidden-safely');
+            
             if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: false });
-            if (sharingInterval) { clearInterval(sharingInterval); sharingInterval = null; }
+            stopTimeTracking();
         };
-
-        function updateProgressUI() {
-            const h = Math.floor(dailySharedSeconds/3600).toString().padStart(2, '0');
-            const m = Math.floor((dailySharedSeconds%3600)/60).toString().padStart(2, '0');
-            const s = (dailySharedSeconds%60).toString().padStart(2, '0');
-            document.querySelectorAll('.daily-time-display').forEach(el => el.textContent = `${h}:${m}:${s}`);
-            const pct = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
-            document.getElementById('progress-bar').style.width = pct + '%'; document.getElementById('progress-percent').textContent = Math.floor(pct) + '%';
-        }
 
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const others = publicUsers.filter(u => u.id !== myNick && u.isOnline);
-            others.forEach(u => {
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
+            
+            others.forEach(function(u) {
                 const safeId = 'card_' + encodeURIComponent(u.id).replace(/%/g, '_');
                 let card = document.getElementById(safeId);
                 const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
+                
                 if (!card) {
                     card = document.createElement('div'); card.id = safeId;
                     card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group flex items-center justify-center";
-                    card.innerHTML = `<div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10"><div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-3xl mb-4">${u.id.charAt(0)}</div><p class="text-xl font-bold text-gray-900">${u.id}</p><p class="text-base text-gray-500 mt-1 goal-text">${u.goal || '목표 없음'}</p></div><div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50"><span class="w-2 h-2 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>${u.id} (<span class="time-text">${h}h ${m}m</span>)</div>`;
+                    card.innerHTML = '<div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10">' +
+                        '<div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-3xl mb-4">' + u.id.charAt(0) + '</div>' +
+                        '<p class="text-xl font-bold text-gray-900">' + u.id + '</p>' +
+                        '<p class="text-base text-gray-500 mt-1 goal-text">' + (u.goal || '목표 없음') + '</p></div>' +
+                        '<div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">' +
+                        '<span class="w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400') + '"></span>' +
+                        u.id + ' (<span class="time-text">' + h + 'h ' + m + 'm</span>)</div>';
                     grid.appendChild(card);
                 } else {
-                    card.querySelector('.time-text').textContent = `${h}h ${m}m`;
+                    card.querySelector('.time-text').textContent = h + 'h ' + m + 'm';
                     card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
-                    card.querySelector('.status-dot').className = `w-2 h-2 rounded-full status-dot ${u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`;
-                    const layer = card.querySelector('.ui-layer'); const vid = card.querySelector('video.remote-video');
+                    card.querySelector('.status-dot').className = 'w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400');
+                    
+                    const layer = card.querySelector('.ui-layer');
+                    const vid = card.querySelector('video.remote-video');
                     if (!u.isSharing) { if (vid) vid.remove(); if (layer) layer.style.display = 'flex'; }
                 }
             });
-            Array.from(grid.children).forEach(c => { if (!others.find(u => 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id)) c.remove(); });
+            Array.from(grid.children).forEach(function(c) { 
+                if (!others.find(function(u) { return 'card_' + encodeURIComponent(u.id).replace(/%/g, '_') === c.id; })) c.remove(); 
+            });
         }
+
         function addRemoteVideo(incomingId, stream) {
             if(!stream || stream.getVideoTracks().length === 0) return;
-            const user = publicUsers.find(u => u.peerId === incomingId); if(!user || !user.isSharing) return;
-            const card = document.getElementById('card_' + encodeURIComponent(user.id).replace(/%/g, '_')); if(!card) return;
+            const user = publicUsers.find(function(u) { return u.peerId === incomingId; });
+            if(!user || !user.isSharing) return;
+            
+            const card = document.getElementById('card_' + encodeURIComponent(user.id).replace(/%/g, '_'));
+            if(!card) return;
             const layer = card.querySelector('.ui-layer'); if(layer) layer.style.display = 'none';
+
             let vid = card.querySelector('video.remote-video');
             if(!vid) {
                 vid = document.createElement('video');
                 vid.className = 'remote-video absolute inset-0 w-full h-full object-cover z-40 ' + (document.getElementById('blur-toggle').checked ? 'video-blur' : '');
-                vid.autoplay = true; vid.playsinline = true; vid.muted = true; card.appendChild(vid);
+                vid.autoplay = true; vid.playsinline = true; vid.muted = true;
+                card.appendChild(vid);
             }
             if(vid.srcObject !== stream) vid.srcObject = stream;
         }
 
+        function syncTimeToDB() {
+            if (!myNick) return;
+            updateDoc(doc(db, DB_COLLECTION, myNick), { 
+                dailySeconds: dailySharedSeconds, 
+                totalSeconds: totalSharedSeconds,
+                weeklySeconds: myWeeklySeconds,
+                timeSlots: myTimeSlots
+            });
+        }
+
+        function startTimeTracking() {
+            if (sharingInterval) return;
+            lastTick = Date.now();
+            sharingInterval = setInterval(function() {
+                const now = Date.now();
+                const current3AM = get3AMDateString(new Date(now));
+                
+                if (lastResetDateStr && lastResetDateStr !== current3AM) {
+                    dailySharedSeconds = 0;
+                    lastResetDateStr = current3AM;
+                    showToast("오전 3시 기준 당일 카운터가 리셋되었습니다.");
+                    if (myNick) {
+                        updateDoc(doc(db, DB_COLLECTION, myNick), { 
+                            dailySeconds: 0, 
+                            lastResetDate: current3AM 
+                        });
+                    }
+                }
+
+                const delta = Math.floor((now - lastTick) / 1000);
+                if (delta > 0) {
+                    dailySharedSeconds += delta; 
+                    totalSharedSeconds += delta;
+
+                    const d = new Date(now);
+                    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                    myWeeklySeconds[dayKeys[get3AMDayIndex(d)]] += delta;
+
+                    const hour = d.getHours();
+                    let slotKey = 'dawn';
+                    if (hour >= 6 && hour < 12) slotKey = 'morning';
+                    else if (hour >= 12 && hour < 18) slotKey = 'afternoon';
+                    else if (hour >= 18) slotKey = 'night';
+                    myTimeSlots[slotKey] += delta;
+
+                    lastTick += delta * 1000; 
+                    updateProgressUI();
+
+                    if (document.getElementById('tab-personal').classList.contains('active')) {
+                        window.renderPersonalTab(true);
+                    }
+
+                    if (dailySharedSeconds % 10 === 0) {
+                        syncTimeToDB();
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTimeTracking() { 
+            if (sharingInterval) clearInterval(sharingInterval); 
+            sharingInterval = null; 
+            syncTimeToDB(); // 중지 시 즉시 저장
+        }
+
+        function updateProgressUI() {
+            const h = Math.floor(dailySharedSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((dailySharedSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (dailySharedSeconds % 60).toString().padStart(2, '0');
+            document.querySelectorAll('.daily-time-display').forEach(function(el) { el.textContent = h + ':' + m + ':' + s; });
+            const percent = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
+            document.getElementById('progress-bar').style.width = percent + '%'; 
+            document.getElementById('progress-percent').textContent = Math.floor(percent) + '%';
+        }
+
+        // 목표 저장 (데이터 규격 통일: dateStr + day)
         document.getElementById('btn-save-goal').onclick = async function() {
             const newGoal = document.getElementById('room-goal-input').value.trim();
             if (!myNick || !newGoal) return;
+            
             const userRef = doc(db, DB_COLLECTION, myNick);
             const snap = await getDoc(userRef);
-            let history = snap.exists() && snap.data().goalHistory ? snap.data().goalHistory : [];
-            const todayStr = get3AMDateString();
-            history = history.filter(h => h.dateStr !== todayStr);
-            history.unshift({ dateStr: todayStr, goal: newGoal, isCompleted: false });
-            await updateDoc(userRef, { goalHistory: history, goal: newGoal });
-            showToast("목표가 저장되었습니다!");
+            let history = (snap.exists() && snap.data().goalHistory) ? snap.data().goalHistory : [];
+            
+            const today3AM = get3AMDateString();
+            const currentDayName = dayNamesMap[get3AMDayIndex()];
+            
+            history = history.filter(function(h) { return h.dateStr !== today3AM && h.day !== currentDayName; });
+            history.unshift({ dateStr: today3AM, day: currentDayName, goal: newGoal, isCompleted: false });
+
+            await updateDoc(userRef, { 
+                goal: newGoal,
+                goalHistory: history 
+            });
+            showToast("오늘의 목표 저장 및 기록 완료!");
+            if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
         };
 
-
         // ==========================================
-        // ✨ 업그레이드 된 실전 뽀모도로 로직 시작 ✨
+        // 뽀모도로 제어
         // ==========================================
-        
         let isGroupPomoMode = false;
         
         document.getElementById('pomo-type-personal').onclick = function() {
@@ -529,15 +724,13 @@
             document.getElementById('pomo-type-personal').className = "px-4 py-1 rounded-full text-xs font-bold text-gray-400 hover:text-gray-700 transition-all duration-300";
         };
 
-        // 음소거 토글
         document.getElementById('btn-pomo-mute').onclick = function() {
             isPomoMuted = !isPomoMuted;
             document.getElementById('pomo-sound-icon').textContent = isPomoMuted ? '🔇' : '🔊';
-            if(!isPomoMuted) pomoAlarmSound.play().catch(e => {}); // 권한 요청용 무음재생
+            if(!isPomoMuted) pomoAlarmSound.play().catch(function(e){});
             showToast(isPomoMuted ? "음소거 모드 ON" : "알림음 ON");
         };
 
-        // 실전 모드 (25분 / 5분)
         const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; 
         let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
@@ -567,11 +760,7 @@
                         pomoSec--; updatePomo(); 
                     } else { 
                         clearInterval(pomoInt); isPomoRun = false;
-                        
-                        // 음소거 해제 시 사운드 플레이
-                        if(!isPomoMuted) {
-                            pomoAlarmSound.play().catch(e => console.log("Audio blocked by browser:", e));
-                        }
+                        if(!isPomoMuted) pomoAlarmSound.play().catch(function(e){});
 
                         if(pomoMode === 'work') {
                             showToast("🍅 25분 집중 완료! 고생하셨습니다.");
@@ -589,15 +778,14 @@
             }
         }
 
-        document.getElementById('mode-work').onclick = () => setPomo('work'); 
-        document.getElementById('mode-break').onclick = () => setPomo('break');
-        document.getElementById('btn-pomo-reset').onclick = () => setPomo(pomoMode);
+        document.getElementById('mode-work').onclick = function() { setPomo('work'); }; 
+        document.getElementById('mode-break').onclick = function() { setPomo('break'); };
+        document.getElementById('btn-pomo-reset').onclick = function() { setPomo(pomoMode); };
         
-        // 다같이 뽀모 시작 모달 열기 및 로직 처리
         document.getElementById('btn-pomo-start').onclick = function() {
             if(isGroupPomoMode && !isPomoRun) {
                 const listEl = document.getElementById('group-pomo-user-list');
-                const others = publicUsers.filter(u => u.id !== myNick && u.isOnline);
+                const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
                 
                 if (others.length === 0) {
                     showToast("현재 접속 중인 다른 작가님이 없습니다.");
@@ -605,12 +793,11 @@
                     return;
                 }
                 
-                listEl.innerHTML = others.map(u => `
-                    <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition">
-                        <input type="checkbox" value="${u.id}" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 user-invite-cb" checked>
-                        <span class="font-bold text-gray-900 text-sm">${u.id}</span>
-                    </label>
-                `).join('');
+                listEl.innerHTML = others.map(function(u) {
+                    return '<label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition">' +
+                        '<input type="checkbox" value="' + u.id + '" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 user-invite-cb" checked>' +
+                        '<span class="font-bold text-gray-900 text-sm">' + u.id + '</span></label>';
+                }).join('');
                 
                 document.getElementById('group-pomo-modal').classList.remove('hidden-safely');
             } else {
@@ -618,19 +805,18 @@
             }
         };
 
-        // 다같이 뽀모 확정 및 신호 전송
         window.startGroupPomo = async function() {
             const checkboxes = document.querySelectorAll('.user-invite-cb:checked');
-            const targetIds = Array.from(checkboxes).map(cb => cb.value);
+            const targetIds = Array.from(checkboxes).map(function(cb) { return cb.value; });
             
             document.getElementById('group-pomo-modal').classList.add('hidden-safely');
             
             if(targetIds.length === 0) {
-                showToast("초대할 작가님을 선택하지 않았습니다. 나홀로 시작합니다.");
+                showToast("초대할 작가님을 선택하지 않았습니다.");
             } else {
                 showToast("초대장을 보냈습니다! 함께 집중을 시작합니다.");
                 const triggerTime = Date.now();
-                targetIds.forEach(id => {
+                targetIds.forEach(function(id) {
                     updateDoc(doc(db, DB_COLLECTION, id), { pomoTrigger: triggerTime });
                 });
             }
@@ -639,106 +825,213 @@
             if(!isPomoRun) togglePomo();
         };
 
-        // --- Log 및 Personal 탭 렌더링 유지 ---
+        // ==========================================
+        // Log 탭 렌더링 (안정된 복구 구문)
+        // ==========================================
         window.renderCommunityLog = function() {
-            const daysKey = ['월', '화', '수', '목', '금', '토', '일'];
             const todayIdx = get3AMDayIndex();
             const communityListEl = document.getElementById('community-list');
             const monthlyGridEl = document.getElementById('monthly-author-grid');
 
-            communityListEl.innerHTML = publicUsers.map(u => {
-                const warnCount = u.warnings || 0; let heartsHtml = '';
+            communityListEl.innerHTML = publicUsers.map(function(u) {
+                const warnCount = u.warnings || 0;
+                let heartsHtml = '';
                 for(let i = 0; i < 3; i++) heartsHtml += (i < (3 - warnCount)) ? '❤️ ' : '💔 ';
                 if(warnCount >= 3) heartsHtml = '<span class="text-red-500 font-bold">퇴출 완료</span>';
-                const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
+
+                const h = Math.floor((u.dailySeconds || 0) / 3600);
+                const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
                 const progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
+                
                 const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
-                const totalH = Math.floor(userTotalSec / 3600), totalM = Math.floor((userTotalSec % 3600) / 60);
+                const totalH = Math.floor(userTotalSec / 3600);
+                const totalM = Math.floor((userTotalSec % 3600) / 60);
 
                 const weekDaysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-                let weekHtml = weekDaysOrder.map((dayKey, idx) => {
+                let weekHtml = weekDaysOrder.map(function(dayKey, idx) {
                     let icon = '-';
-                    if (idx <= 3) icon = '😊';
-                    else if (idx < todayIdx) { const wLogs = u.weeklyLogs || {}; icon = wLogs[dayKey] ? '😊' : '🥲'; }
-                    else if (idx === todayIdx) icon = (u.dailySeconds >= GOAL_SECONDS) ? '😊' : '-';
-                    return `<div class="flex flex-col items-center"><span class="text-xs text-gray-400 font-bold mb-1">${daysKey[idx]}</span><span class="text-2xl">${icon}</span></div>`;
+                    if (idx <= 3) {
+                        icon = '😊';
+                    } else if (idx < todayIdx) {
+                        const wLogs = u.weeklyLogs || {};
+                        icon = wLogs[dayKey] ? '😊' : '🥲';
+                    } else if (idx === todayIdx) {
+                        icon = (u.dailySeconds >= GOAL_SECONDS) ? '😊' : '-';
+                    } else {
+                        icon = '-';
+                    }
+
+                    return '<div class="flex flex-col items-center">' +
+                        '<span class="text-xs text-gray-400 font-bold mb-1">' + dayNamesMap[idx] + '</span>' +
+                        '<span class="text-2xl">' + icon + '</span>' +
+                        '</div>';
                 }).join('');
 
                 const historyList = u.goalHistory || [];
-                let goalHistoryHtml = historyList.length > 0 ? historyList.map(item => `<li class="text-sm text-gray-700 flex items-center gap-2"><span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">[${item.dateStr.slice(-5)}]</span><span class="${item.isCompleted ? 'goal-completed' : ''}">${item.goal}</span></li>`).join('') : '<li class="text-sm text-gray-400">아직 저장된 목표 기록이 없습니다.</li>';
+                let goalHistoryHtml = historyList.length > 0 ? historyList.map(function(item) {
+                    const tag = item.dateStr ? item.dateStr.slice(-5) : (item.day || '목표');
+                    return '<li class="text-sm text-gray-700 flex items-center gap-2">' +
+                        '<span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">[' + tag + ']</span>' +
+                        '<span class="' + (item.isCompleted ? 'goal-completed' : '') + '">' + item.goal + '</span>' +
+                        '</li>';
+                }).join('') : '<li class="text-sm text-gray-400">아직 저장된 목표 기록이 없습니다.</li>';
 
-                return `<div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-5"><div class="flex items-center gap-5"><div class="w-16 h-16 rounded-2xl bg-gray-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">${u.id.charAt(0)}</div><div><h3 class="font-bold text-2xl text-gray-900">${u.id}</h3><p class="text-sm text-gray-500 mt-1">오늘의 목표: <span class="text-gray-900 font-bold">${u.goal || '미설정'}</span></p></div></div><div class="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-center"><span class="text-sm text-gray-500 font-bold">남은 생명</span><div class="text-lg tracking-widest">${heartsHtml}</div></div></div><div><div class="flex justify-between items-center text-sm font-bold text-gray-600 mb-2"><span>오늘 작업 (${h}시간 ${m}분 / 2시간 목표)</span><div class="flex items-center gap-2"><span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">총 누적 ${totalH}시간 ${totalM}분</span><span class="text-gray-900 text-base">${Math.floor(progress)}%</span></div></div><div class="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden"><div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${progress}%"></div></div></div><div class="bg-gray-50/70 rounded-2xl p-5 border border-gray-100"><span class="text-sm font-bold text-gray-500 block mb-3">주간 7일 마감 현황 (새벽 3시 정산)</span><div class="grid grid-cols-7 gap-2 text-center">${weekHtml}</div></div><div class="bg-indigo-50/30 rounded-2xl p-5 border border-indigo-50/50"><span class="text-sm font-bold text-indigo-900 block mb-3">📌 최근 집필 목표 기록</span><ul class="space-y-2">${goalHistoryHtml}</ul></div></div>`;
+                return '<div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">' +
+                    '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-5">' +
+                    '<div class="flex items-center gap-5">' +
+                    '<div class="w-16 h-16 rounded-2xl bg-gray-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">' + u.id.charAt(0) + '</div>' +
+                    '<div><h3 class="font-bold text-2xl text-gray-900">' + u.id + '</h3>' +
+                    '<p class="text-sm text-gray-500 mt-1">오늘의 목표: <span class="text-gray-900 font-bold">' + (u.goal || '목표 미설정') + '</span></p></div>' +
+                    '</div>' +
+                    '<div class="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-center">' +
+                    '<span class="text-sm text-gray-500 font-bold">남은 생명</span>' +
+                    '<div class="text-lg tracking-widest">' + heartsHtml + '</div></div></div>' +
+                    '<div><div class="flex justify-between items-center text-sm font-bold text-gray-600 mb-2">' +
+                    '<span>오늘 작업 (' + h + '시간 ' + m + '분 / 2시간 목표)</span>' +
+                    '<div class="flex items-center gap-2">' +
+                    '<span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">총 누적 ' + totalH + '시간 ' + totalM + '분</span>' +
+                    '<span class="text-gray-900 text-base">' + Math.floor(progress) + '%</span></div></div>' +
+                    '<div class="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">' +
+                    '<div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ' + progress + '%"></div></div></div>' +
+                    '<div class="bg-gray-50/70 rounded-2xl p-5 border border-gray-100">' +
+                    '<span class="text-sm font-bold text-gray-500 block mb-3">주간 7일 마감 현황 (새벽 3시 정산)</span>' +
+                    '<div class="grid grid-cols-7 gap-2 text-center">' + weekHtml + '</div></div>' +
+                    '<div class="bg-indigo-50/30 rounded-2xl p-5 border border-indigo-50/50">' +
+                    '<span class="text-sm font-bold text-indigo-900 block mb-3">📌 최근 집필 목표 기록</span>' +
+                    '<ul class="space-y-2">' + goalHistoryHtml + '</ul></div></div>';
             }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
 
-            const now = new Date(); document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
-            monthlyGridEl.innerHTML = publicUsers.map(u => {
+            const now = new Date();
+            document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
+
+            monthlyGridEl.innerHTML = publicUsers.map(function(u) {
                 const userTotalSec = u.totalSeconds || u.dailySeconds || 0;
-                const totalH = Math.floor(userTotalSec / 3600), totalM = Math.floor((userTotalSec % 3600) / 60);
+                const totalH = Math.floor(userTotalSec / 3600);
+                const totalM = Math.floor((userTotalSec % 3600) / 60);
+
                 const todayProgress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
                 const avgProgress = Math.min(Math.floor((400 + todayProgress) / 5), 100);
-                return `<div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4"><div class="flex items-center gap-3 border-b border-gray-200/60 pb-3"><div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">${u.id.charAt(0)}</div><span class="font-bold text-lg text-gray-900">${u.id} 작가</span></div><div class="space-y-2 text-sm"><div class="flex justify-between items-center"><span class="text-gray-500 font-medium">총 누적 작업 시간</span><span class="font-bold text-gray-900 text-base">${totalH}시간 ${totalM}분</span></div><div class="flex justify-between items-center"><span class="text-gray-500 font-medium">평균 달성률 추정</span><span class="font-bold text-emerald-600 text-base">${avgProgress}%</span></div></div></div>`;
+
+                return '<div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4">' +
+                    '<div class="flex items-center gap-3 border-b border-gray-200/60 pb-3">' +
+                    '<div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">' + u.id.charAt(0) + '</div>' +
+                    '<span class="font-bold text-lg text-gray-900">' + u.id + ' 작가</span></div>' +
+                    '<div class="space-y-2 text-sm">' +
+                    '<div class="flex justify-between items-center"><span class="text-gray-500 font-medium">총 누적 작업 시간</span><span class="font-bold text-gray-900 text-base">' + totalH + '시간 ' + totalM + '분</span></div>' +
+                    '<div class="flex justify-between items-center"><span class="text-gray-500 font-medium">평균 달성률 추정</span><span class="font-bold text-emerald-600 text-base">' + avgProgress + '%</span></div>' +
+                    '</div></div>';
             }).join('') || '<div class="text-gray-400 col-span-full py-6 text-center">참여자가 없습니다.</div>';
         };
 
-        window.toggleGoalCheck = async function(dateStr) {
+        // 목표 체크 토글
+        window.toggleGoalCheck = async function(identifier) {
             const userRef = doc(db, DB_COLLECTION, myNick);
             const snap = await getDoc(userRef);
-            let history = snap.data().goalHistory;
-            const targetIdx = history.findIndex(h => h.dateStr === dateStr);
+            if (!snap.exists()) return;
+            
+            let history = snap.data().goalHistory || [];
+            const targetIdx = history.findIndex(function(h) { return h.dateStr === identifier || h.day === identifier; });
             if(targetIdx > -1) {
                 history[targetIdx].isCompleted = !history[targetIdx].isCompleted;
                 await updateDoc(userRef, { goalHistory: history });
                 showToast(history[targetIdx].isCompleted ? "목표 달성을 축하합니다! 🎉" : "목표 달성이 취소되었습니다.");
                 if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
+                if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
             }
         };
 
-        window.renderPersonalTab = function(useLocalStats = false) {
-            const myData = publicUsers.find(u => u.id === myNick) || { weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots, goalHistory: [] };
+        // Personal 탭 동적 렌더링
+        window.renderPersonalTab = function(useLocalStats) {
+            if(!myNick) return;
+            const myData = publicUsers.find(function(u) { return u.id === myNick; }) || { weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots, goalHistory: [] };
+            
             const wSec = useLocalStats ? myWeeklySeconds : (myData.weeklySeconds || myWeeklySeconds);
             const tSlot = useLocalStats ? myTimeSlots : (myData.timeSlots || myTimeSlots);
             
-            const totalWeekSec = Object.values(wSec).reduce((a, b) => a + b, 0);
+            const totalWeekSec = Object.values(wSec).reduce(function(a, b) { return a + b; }, 0);
             document.getElementById('ps-total-time').textContent = Math.floor(totalWeekSec/3600) + "시간 " + Math.floor((totalWeekSec%3600)/60) + "분";
-            const avgSec = Math.floor(totalWeekSec / (get3AMDayIndex() + 1));
+            
+            const currentDayIdx = get3AMDayIndex();
+            const avgSec = Math.floor(totalWeekSec / (currentDayIdx + 1));
             document.getElementById('ps-avg-time').textContent = Math.floor(avgSec/3600) + "시간 " + Math.floor((avgSec%3600)/60) + "분";
+            if (avgSec >= GOAL_SECONDS) {
+                document.getElementById('ps-avg-msg').textContent = "목표(2시간) 달성 중 ✅"; document.getElementById('ps-avg-msg').className = "text-xs text-emerald-600 font-bold mt-2";
+            } else {
+                document.getElementById('ps-avg-msg').textContent = "매일 꾸준히 해봐요!"; document.getElementById('ps-avg-msg').className = "text-xs text-gray-400 font-bold mt-2";
+            }
 
-            let maxDay = '-', maxDaySec = -1;
-            const dayNames = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
-            for(let key in wSec) { if(wSec[key] > maxDaySec) { maxDaySec = wSec[key]; maxDay = dayNames[key]; } }
-            document.getElementById('ps-best-day').textContent = maxDaySec > 0 ? maxDay + "요일" : "-";
+            let maxDay = '', maxDaySec = -1;
+            for(let key in wSec) { if(wSec[key] > maxDaySec) { maxDaySec = wSec[key]; maxDay = key; } }
+            const dayKeyNames = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
+            
+            if (maxDaySec > 0) {
+                document.getElementById('ps-best-day').textContent = dayKeyNames[maxDay] + "요일";
+                document.getElementById('ps-best-day-msg').textContent = "누적 " + Math.floor(maxDaySec/3600) + "시간 " + Math.floor((maxDaySec%3600)/60) + "분 작업";
+            } else {
+                document.getElementById('ps-best-day').textContent = "-";
+                document.getElementById('ps-best-day-msg').textContent = "데이터 수집 중";
+            }
+
+            const slotNames = { dawn: '00시 ~ 06시', morning: '06시 ~ 12시', afternoon: '12시 ~ 18시', night: '18시 ~ 24시' };
+            const slotTraits = { dawn: '새벽 고요 집중형', morning: '아침을 여는 상쾌형', afternoon: '오후 에너지 활기형', night: '야간 몰입형 작가' };
+            let maxSlot = '', maxSlotSec = -1;
+            for(let key in tSlot) { if(tSlot[key] > maxSlotSec) { maxSlotSec = tSlot[key]; maxSlot = key; } }
+            
+            if (maxSlotSec > 0) {
+                document.getElementById('ps-golden-time').textContent = slotNames[maxSlot];
+                document.getElementById('ps-golden-msg').textContent = slotTraits[maxSlot] + " 타입";
+                document.getElementById('ps-insight-box').innerHTML = "💡 **Insight:** 작가님은 " + slotNames[maxSlot].split('~')[0].trim() + "대 주변에 몰입도가 가장 높습니다. 이 시간에 중요한 장면을 집필해 보세요!";
+            } else {
+                document.getElementById('ps-golden-time').textContent = "-";
+                document.getElementById('ps-golden-msg').textContent = "데이터 수집 중";
+            }
 
             const maxExpectedSec = Math.max(5 * 3600, maxDaySec); 
-            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(dKey => {
+            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(function(dKey) {
                 const sec = wSec[dKey];
                 const pct = Math.max(5, Math.min((sec / maxExpectedSec) * 100, 100));
-                document.getElementById(`ps-text-${dKey}`).textContent = (sec/3600).toFixed(1) + "h";
-                document.getElementById(`ps-bar-${dKey}`).style.height = pct + "%";
-                document.getElementById(`ps-bar-${dKey}`).className = sec === maxDaySec && sec > 0 ? "w-8 bg-indigo-600 rounded-xl transition-all shadow-md" : "w-8 bg-gray-200 rounded-xl transition-all";
+                document.getElementById('ps-text-' + dKey).textContent = (sec/3600).toFixed(1) + "h";
+                document.getElementById('ps-bar-' + dKey).style.height = pct + "%";
+                
+                if(sec === maxDaySec && sec > 0) {
+                    document.getElementById('ps-bar-' + dKey).className = "w-8 bg-indigo-600 rounded-xl transition-all duration-700 shadow-md";
+                    document.getElementById('ps-text-' + dKey).className = "text-xs font-bold text-indigo-600";
+                } else {
+                    document.getElementById('ps-bar-' + dKey).className = "w-8 bg-gray-200 rounded-xl transition-all duration-700";
+                    document.getElementById('ps-text-' + dKey).className = "text-xs font-bold text-gray-500";
+                }
             });
 
-            const totalSlots = Object.values(tSlot).reduce((a, b) => a + b, 0) || 1; 
-            ['dawn', 'morning', 'afternoon', 'night'].forEach(sKey => {
+            const totalSlots = Object.values(tSlot).reduce(function(a, b) { return a + b; }, 0) || 1; 
+            ['dawn', 'morning', 'afternoon', 'night'].forEach(function(sKey) {
                 const pct = Math.floor((tSlot[sKey] / totalSlots) * 100);
-                document.getElementById(`ps-pct-${sKey}`).textContent = pct + "%";
-                document.getElementById(`ps-bar-${sKey}`).style.width = pct + "%";
+                document.getElementById('ps-pct-' + sKey).textContent = pct + "%";
+                document.getElementById('ps-bar-' + sKey).style.width = pct + "%";
             });
 
             const historyList = myData.goalHistory || [];
-            document.getElementById('ps-goal-history-list').innerHTML = historyList.length === 0 ? 
-                '<div class="col-span-full text-center text-gray-400 py-4">아직 기록된 목표가 없습니다.</div>' : 
-                historyList.slice(0, 6).map(item => {
+            if(historyList.length > 0) {
+                document.getElementById('ps-goal-history-list').innerHTML = historyList.slice(0, 6).map(function(item) {
                     const isDone = item.isCompleted;
-                    return `
-                    <div class="p-4 bg-gray-50 rounded-2xl border ${isDone ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-100'} flex items-start gap-3 transition-colors">
-                        <input type="checkbox" ${isDone ? 'checked' : ''} onclick="window.toggleGoalCheck('${item.dateStr}')" class="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer">
-                        <div>
-                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">${item.dateStr.slice(-5)} 목표</span>
-                            <p class="font-bold mt-2 text-base ${isDone ? 'goal-completed' : 'text-gray-900'}">${item.goal}</p>
-                        </div>
-                    </div>`;
+                    const dateTag = item.dateStr ? item.dateStr.slice(-5) : (item.day + '요일');
+                    const targetKey = item.dateStr || item.day;
+                    
+                    return '<div class="p-4 bg-gray-50 rounded-2xl border ' + (isDone ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-100') + ' flex items-start gap-3 transition-colors">' +
+                           '<input type="checkbox" ' + (isDone ? 'checked' : '') + ' onclick="window.toggleGoalCheck(\'' + targetKey + '\')" class="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer">' +
+                           '<div><span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">' + dateTag + ' 목표</span>' +
+                           '<p class="font-bold mt-2 text-base ' + (isDone ? 'goal-completed' : 'text-gray-900') + '">' + item.goal + '</p></div></div>';
                 }).join('');
+            } else {
+                document.getElementById('ps-goal-history-list').innerHTML = '<div class="col-span-full text-center text-gray-400 py-4">아직 기록된 목표가 없습니다. 오늘의 목표를 저장해보세요!</div>';
+            }
         };
+
+        window.addEventListener('beforeunload', function() { 
+            if (myNick) {
+                syncTimeToDB();
+                updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); 
+            }
+        });
     </script>
 </body>
 </html>

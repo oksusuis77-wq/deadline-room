@@ -125,7 +125,6 @@
                     </ul>
                 </div>
             </div>
-            <!-- 복구된 유저 리스트 영역 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="community-list"></div>
         </section>
     </main>
@@ -195,8 +194,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // ★ 오류 해결의 핵심: 권한 오류(Permission Denied)를 막기 위해 원래 쓰던 기본 컬렉션으로 지정
-        const DB_COLLECTION = 'users';
+        // ★ 결정적 문제 해결: 엉뚱한 새 방(users)이 아닌 기존 동료들이 있는 원래 방으로 정확히 연결합니다.
+        const DB_COLLECTION = 'artifacts/app/users';
         const GOAL_SECONDS = 2 * 60 * 60; 
         
         let myNick = '';
@@ -228,7 +227,6 @@
                 const cred = await signInAnonymously(auth);
                 uid = cred.user.uid;
                 
-                // ★ 오류 원인 제거 완료: 닉네임 대신 Firebase 인증된 고유 ID(uid) 사용 -> 권한 튕김 완벽 해결!
                 const userRef = doc(db, DB_COLLECTION, uid);
                 const snap = await getDoc(userRef);
                 const today = getLogicalDate();
@@ -360,7 +358,6 @@
                 snapshot.forEach(docSnap => {
                     try {
                         const data = docSnap.data() || {};
-                        // ★ UID(고유 ID)를 기준으로 본인 판별
                         const isMe = docSnap.id === uid; 
                         const nickname = String(data.nickname || '익명 작가');
                         const initial = nickname.charAt(0) || '?';

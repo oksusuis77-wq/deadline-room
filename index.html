@@ -333,21 +333,28 @@
             onSnapshot(collection(db, DB_COLLECTION), (snapshot) => {
                 const now = Date.now();
                 const logList = document.getElementById('community-list');
-                
-                // 기존 내용을 초기화하고 다시 그리기 전에 임시 배열에 저장 (렌더링 안정성 확보)
                 const newHTML = [];
                 
                 snapshot.forEach(docSnap => {
                     try {
                         const data = docSnap.data();
-                        
-                        // 데이터 누락 방어 코드 (이전 데이터 등으로 인해 에러가 나는 것을 방지)
                         const nickname = data.nickname || '익명 작가';
                         const initial = nickname.charAt(0) || '?';
                         const seconds = data.seconds || 0;
                         const hearts = data.hearts ?? 3;
 
-                        const lastActiveMs = data.lastActive ? data.lastActive.toMillis() : 0;
+                        // 기존 데이터 형식이 달라도 에러가 나지 않도록 매우 안전하게 시간 계산 처리
+                        let lastActiveMs = 0;
+                        if (data.lastActive) {
+                            if (typeof data.lastActive.toMillis === 'function') {
+                                lastActiveMs = data.lastActive.toMillis();
+                            } else if (data.lastActive.seconds) {
+                                lastActiveMs = data.lastActive.seconds * 1000;
+                            } else if (typeof data.lastActive === 'number') {
+                                lastActiveMs = data.lastActive;
+                            }
+                        }
+
                         const isOffline = (now - lastActiveMs) > 60000;
 
                         // 오프라인 유저 비디오 삭제 로직
@@ -402,7 +409,6 @@
                                     
                                     <div class="flex justify-between items-center bg-gray-50 p-4 rounded-xl text-sm border border-gray-100">
                                         <span class="font-bold text-gray-600">이번 주 달성 기록</span>
-                                        <!-- 요청하신 요일별 달성 여부 UI (날짜 아래에 표기) -->
                                         <div class="flex gap-4 text-center">
                                             <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">월</span><span class="text-lg leading-none">😊</span></div>
                                             <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">화</span><span class="text-lg leading-none">😊</span></div>

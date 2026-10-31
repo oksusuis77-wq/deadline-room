@@ -422,6 +422,13 @@
             document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
             document.getElementById('user-info').textContent = myNick + ' (온라인)';
             
+            // ★ 수정: 유령 작가 방지를 위해 1분마다 생존 신고 (Heartbeat) 발송
+            setInterval(async () => {
+                if (myNick) {
+                    await updateDoc(doc(db, DB_COLLECTION, myNick), { lastActive: serverTimestamp() });
+                }
+            }, 60000);
+
             const customIceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'turn:global.relay.metered.ca:80', username: 'b3b66b02e8b3db0c7fb62dcd', credential: 'UUa43LGXDD4OzNKa' },
@@ -468,10 +475,14 @@
                 
                 if (lastResetDateStr !== today3AM) {
                     dailySharedSeconds = 0; lastResetDateStr = today3AM;
-                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp() });
+                    
+                    // 시작 시 새벽 3시가 넘어있으면 로컬 뽀모도로도 초기화
+                    localStorage.setItem('pomo_tomatoes', '0');
+                    document.getElementById('tomato-container').innerHTML = '';
+
+                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp(), pomoTrigger: 0 });
                 } else {
                     dailySharedSeconds = data.dailySeconds || 0;
-                    // 오차 보정: totalSeconds가 dailySeconds보다 작으면 강제 보정
                     totalSharedSeconds = Math.max(data.totalSeconds || 0, dailySharedSeconds);
                     await updateDoc(userRef, { peerId: myPeerId, isOnline: true, totalSeconds: totalSharedSeconds, lastActive: serverTimestamp() });
                 }
@@ -482,12 +493,24 @@
             
             onSnapshot(collection(db, DB_COLLECTION), function(snap) {
                 publicUsers = [];
+                const nowMillis = Date.now();
                 snap.forEach(function(d) {
                     const data = d.data();
-                    if(data.id) publicUsers.push(data);
+                    if(data.id) {
+                        // ★ 수정: 유령 작가 필터링 (최근 2분 이상 생존 신고가 없으면 강제 오프라인 처리)
+                        let isActuallyOnline = data.isOnline;
+                        if (data.lastActive && typeof data.lastActive.toMillis === 'function') {
+                            if (nowMillis - data.lastActive.toMillis() > 120000) {
+                                isActuallyOnline = false;
+                            }
+                        }
+                        
+                        if(isActuallyOnline) {
+                            publicUsers.push(data);
+                        }
+                    }
                 });
 
-                // 내 데이터 로컬 메모리 보정 및 동기화 (단일 출처화)
                 const myDataSync = publicUsers.find(u => u.id === myNick);
                 if (myDataSync) {
                     if (myDataSync.dailySeconds !== undefined && !sharingInterval) {
@@ -517,7 +540,7 @@
 
         function checkAndCallOthers() {
             if (!myPeerId || !peer) return;
-            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline && u.peerId; });
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.peerId; });
             others.forEach(function(u) {
                 if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
                     const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
@@ -572,10 +595,9 @@
             stopTimeTracking();
         };
 
-        // 퇴장 작가 카드 자동 완전 삭제 (잔상 오류 수정 완료)
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
+            const others = publicUsers.filter(function(u) { return u.id !== myNick; });
             const validCardIds = new Set(others.map(function(u) { return makeSafeId(u.id); }));
             
             others.forEach(function(u) {
@@ -605,7 +627,6 @@
                 }
             });
 
-            // 퇴장한 작가 DOM에서 완벽히 제거
             Array.from(grid.children).forEach(function(c) { 
                 if (!validCardIds.has(c.id)) c.remove(); 
             });
@@ -648,14 +669,22 @@
                 const now = Date.now();
                 const current3AM = get3AMDateString(new Date(now));
                 
+                // ★ 수정: 매일 새벽 3시가 지나면 시간 + 뽀모도로(토마토) 동시 초기화
                 if (lastResetDateStr && lastResetDateStr !== current3AM) {
                     dailySharedSeconds = 0;
                     lastResetDateStr = current3AM;
-                    showToast("오전 3시 기준 당일 카운터가 리셋되었습니다.");
+                    
+                    localStorage.setItem('pomo_tomatoes', '0');
+                    const tomatoContainer = document.getElementById('tomato-container');
+                    if(tomatoContainer) tomatoContainer.innerHTML = '';
+                    
+                    showToast("오전 3시 기준 당일 카운터 및 뽀모도로가 리셋되었습니다.");
+                    
                     if (myNick) {
                         updateDoc(doc(db, DB_COLLECTION, myNick), { 
                             dailySeconds: 0, 
-                            lastResetDate: current3AM 
+                            lastResetDate: current3AM,
+                            pomoTrigger: 0
                         });
                     }
                 }
@@ -708,7 +737,6 @@
             document.getElementById('progress-percent').textContent = Math.floor(percent) + '%';
         }
 
-        // 오늘의 목표 저장 (당일 덮어쓰기 완료)
         document.getElementById('btn-save-goal').onclick = async function() {
             const newGoal = document.getElementById('room-goal-input').value.trim();
             if (!myNick || !newGoal) return;
@@ -845,7 +873,7 @@
         document.getElementById('btn-pomo-start').onclick = function() {
             if(isGroupPomoMode && !isPomoRun) {
                 const listEl = document.getElementById('group-pomo-user-list');
-                const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
+                const others = publicUsers.filter(function(u) { return u.id !== myNick; });
                 
                 if (others.length === 0) {
                     showToast("현재 접속 중인 다른 작가님이 없습니다.");
@@ -1002,7 +1030,6 @@
             }
         };
 
-        // Personal 탭 동적 렌더링
         window.renderPersonalTab = function(useLocalStats) {
             if(!myNick) return;
             const myData = publicUsers.find(function(u) { return u.id === myNick; }) || { weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots, goalHistory: [] };

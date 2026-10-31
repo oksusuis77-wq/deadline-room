@@ -422,13 +422,6 @@
             document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
             document.getElementById('user-info').textContent = myNick + ' (온라인)';
             
-            // ★ 수정: 유령 작가 방지를 위해 1분마다 생존 신고 (Heartbeat) 발송
-            setInterval(async () => {
-                if (myNick) {
-                    await updateDoc(doc(db, DB_COLLECTION, myNick), { lastActive: serverTimestamp() });
-                }
-            }, 60000);
-
             const customIceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'turn:global.relay.metered.ca:80', username: 'b3b66b02e8b3db0c7fb62dcd', credential: 'UUa43LGXDD4OzNKa' },
@@ -474,10 +467,12 @@
                 if (data.pomoTrigger) lastPomoTriggerTime = data.pomoTrigger;
                 
                 if (lastResetDateStr !== today3AM) {
-                    dailySharedSeconds = 0; lastResetDateStr = today3AM;
+                    dailySharedSeconds = 0; 
+                    lastResetDateStr = today3AM;
                     
-                    // 시작 시 새벽 3시가 넘어있으면 로컬 뽀모도로도 초기화
+                    // 내 DB가 아직 갱신 안 됐을 때 로컬 뽀모도로(토마토) 초기화 강제
                     localStorage.setItem('pomo_tomatoes', '0');
+                    localStorage.setItem('pomo_last_date', today3AM);
                     document.getElementById('tomato-container').innerHTML = '';
 
                     await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp(), pomoTrigger: 0 });
@@ -493,27 +488,20 @@
             
             onSnapshot(collection(db, DB_COLLECTION), function(snap) {
                 publicUsers = [];
-                const nowMillis = Date.now();
                 snap.forEach(function(d) {
                     const data = d.data();
                     if(data.id) {
-                        // ★ 수정: 유령 작가 필터링 (최근 2분 이상 생존 신고가 없으면 강제 오프라인 처리)
-                        let isActuallyOnline = data.isOnline;
-                        if (data.lastActive && typeof data.lastActive.toMillis === 'function') {
-                            if (nowMillis - data.lastActive.toMillis() > 120000) {
-                                isActuallyOnline = false;
-                            }
-                        }
-                        
-                        if(isActuallyOnline) {
-                            publicUsers.push(data);
-                        }
+                        publicUsers.push(data);
                     }
                 });
 
+                // 내 데이터 동기화 시 날짜 확인 강제
                 const myDataSync = publicUsers.find(u => u.id === myNick);
                 if (myDataSync) {
-                    if (myDataSync.dailySeconds !== undefined && !sharingInterval) {
+                    const current3AM = get3AMDateString();
+                    if (myDataSync.lastResetDate && myDataSync.lastResetDate !== current3AM) {
+                        dailySharedSeconds = 0; // DB가 아직 과거 날짜면 0으로 표시
+                    } else if (myDataSync.dailySeconds !== undefined && !sharingInterval) {
                         dailySharedSeconds = myDataSync.dailySeconds;
                     }
                     if (myDataSync.totalSeconds !== undefined && !sharingInterval) {
@@ -540,13 +528,13 @@
 
         function checkAndCallOthers() {
             if (!myPeerId || !peer) return;
-            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.peerId; });
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline && u.peerId; });
             others.forEach(function(u) {
                 if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
                     const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
                     if (call) {
                         currentCalls[u.peerId] = call;
-                        call.on('stream', function(stream) { addRemoteVideo(u.peerId, stream); });
+                        call.on('stream', function(stream) { addRemoteVideo(call.peer, stream); });
                     }
                 }
             });
@@ -597,13 +585,17 @@
 
         function renderOtherUsers() {
             const grid = document.getElementById('other-users-grid');
-            const others = publicUsers.filter(function(u) { return u.id !== myNick; });
+            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
             const validCardIds = new Set(others.map(function(u) { return makeSafeId(u.id); }));
+            const current3AM = get3AMDateString();
             
             others.forEach(function(u) {
                 const safeId = makeSafeId(u.id);
                 let card = document.getElementById(safeId);
-                const h = Math.floor((u.dailySeconds || 0) / 3600), m = Math.floor(((u.dailySeconds || 0) % 3600) / 60).toString().padStart(2, '0');
+                
+                // ★ 핵심 수정: 다른 유저의 DB가 어제 날짜로 멈춰있다면, 내 화면에서는 0으로 강제 초기화해서 표시 (Virtual Reset)
+                const displayDailySec = (u.lastResetDate && u.lastResetDate !== current3AM) ? 0 : (u.dailySeconds || 0);
+                const h = Math.floor(displayDailySec / 3600), m = Math.floor((displayDailySec % 3600) / 60).toString().padStart(2, '0');
                 
                 if (!card) {
                     card = document.createElement('div'); card.id = safeId;
@@ -669,22 +661,22 @@
                 const now = Date.now();
                 const current3AM = get3AMDateString(new Date(now));
                 
-                // ★ 수정: 매일 새벽 3시가 지나면 시간 + 뽀모도로(토마토) 동시 초기화
+                // ★ 타이머 동작 중 새벽 3시가 넘어갔을 때 동시 리셋 처리
                 if (lastResetDateStr && lastResetDateStr !== current3AM) {
                     dailySharedSeconds = 0;
                     lastResetDateStr = current3AM;
                     
                     localStorage.setItem('pomo_tomatoes', '0');
+                    localStorage.setItem('pomo_last_date', current3AM);
                     const tomatoContainer = document.getElementById('tomato-container');
                     if(tomatoContainer) tomatoContainer.innerHTML = '';
                     
-                    showToast("오전 3시 기준 당일 카운터 및 뽀모도로가 리셋되었습니다.");
+                    showToast("오전 3시 기준 당일 카운터가 리셋되었습니다.");
                     
                     if (myNick) {
                         updateDoc(doc(db, DB_COLLECTION, myNick), { 
                             dailySeconds: 0, 
-                            lastResetDate: current3AM,
-                            pomoTrigger: 0
+                            lastResetDate: current3AM 
                         });
                     }
                 }
@@ -761,15 +753,32 @@
         };
 
         // ==========================================
-        // 뽀모도로 제어 및 새로고침 유지(localStorage)
+        // 뽀모도로 제어 및 토마토 일별 자동 리셋 (추가)
         // ==========================================
         let isGroupPomoMode = false;
         const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; 
         let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
         const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
 
+        // ★ 핵심 추가: 로컬 스토리지에 저장된 토마토 날짜가 오늘(새벽 3시 이후)이 아니면 지우는 함수
+        function checkAndResetTomatoes() {
+            try {
+                const today3AM = get3AMDateString();
+                const lastTomatoDate = localStorage.getItem('pomo_last_date');
+                if (lastTomatoDate && lastTomatoDate !== today3AM) {
+                    localStorage.setItem('pomo_tomatoes', '0');
+                    localStorage.setItem('pomo_last_date', today3AM);
+                    const container = document.getElementById('tomato-container');
+                    if (container) container.innerHTML = '';
+                } else if (!lastTomatoDate) {
+                    localStorage.setItem('pomo_last_date', today3AM);
+                }
+            } catch(e){}
+        }
+
         function loadPomoState() {
             try {
+                checkAndResetTomatoes(); // 앱 시작 시 토마토 날짜 검증
                 const savedSec = localStorage.getItem('pomo_sec');
                 const savedMode = localStorage.getItem('pomo_mode');
                 const savedTomatoes = localStorage.getItem('pomo_tomatoes');
@@ -797,6 +806,7 @@
                 localStorage.setItem('pomo_mode', pomoMode);
                 const count = document.getElementById('tomato-container').children.length;
                 localStorage.setItem('pomo_tomatoes', count);
+                localStorage.setItem('pomo_last_date', get3AMDateString()); // 저장할 때 무조건 오늘 날짜 갱신
             } catch (e) {}
         }
         
@@ -873,7 +883,7 @@
         document.getElementById('btn-pomo-start').onclick = function() {
             if(isGroupPomoMode && !isPomoRun) {
                 const listEl = document.getElementById('group-pomo-user-list');
-                const others = publicUsers.filter(function(u) { return u.id !== myNick; });
+                const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
                 
                 if (others.length === 0) {
                     showToast("현재 접속 중인 다른 작가님이 없습니다.");
@@ -916,10 +926,11 @@
         loadPomoState();
 
         // ==========================================
-        // Log 탭 렌더링
+        // Log 탭 렌더링 (새벽 3시 Virtual Reset 기능 포함)
         // ==========================================
         window.renderCommunityLog = function() {
             const todayIdx = get3AMDayIndex();
+            const current3AM = get3AMDateString();
             const communityListEl = document.getElementById('community-list');
             const monthlyGridEl = document.getElementById('monthly-author-grid');
 
@@ -929,11 +940,14 @@
                 for(let i = 0; i < 3; i++) heartsHtml += (i < (3 - warnCount)) ? '❤️ ' : '💔 ';
                 if(warnCount >= 3) heartsHtml = '<span class="text-red-500 font-bold">퇴출 완료</span>';
 
-                const h = Math.floor((u.dailySeconds || 0) / 3600);
-                const m = Math.floor(((u.dailySeconds || 0) % 3600) / 60);
-                const progress = Math.min(((u.dailySeconds || 0) / GOAL_SECONDS) * 100, 100);
+                // ★ 핵심 수정: 다른 유저의 DB가 어제 날짜로 멈춰있다면, 내 화면(Log탭)에서는 0시간으로 강제 리셋해서 표시
+                const userDailySec = (u.lastResetDate && u.lastResetDate !== current3AM) ? 0 : (u.dailySeconds || 0);
                 
-                const userTotalSec = Math.max(u.totalSeconds || 0, u.dailySeconds || 0);
+                const h = Math.floor(userDailySec / 3600);
+                const m = Math.floor((userDailySec % 3600) / 60);
+                const progress = Math.min((userDailySec / GOAL_SECONDS) * 100, 100);
+                
+                const userTotalSec = Math.max(u.totalSeconds || 0, userDailySec);
                 const totalH = Math.floor(userTotalSec / 3600);
                 const totalM = Math.floor((userTotalSec % 3600) / 60);
 
@@ -946,7 +960,7 @@
                         const wLogs = u.weeklyLogs || {};
                         icon = wLogs[dayKey] ? '😊' : '🥲';
                     } else if (idx === todayIdx) {
-                        icon = (u.dailySeconds >= GOAL_SECONDS) ? '😊' : '-';
+                        icon = (userDailySec >= GOAL_SECONDS) ? '😊' : '-';
                     } else {
                         icon = '-';
                     }
@@ -995,7 +1009,9 @@
             document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
 
             monthlyGridEl.innerHTML = publicUsers.map(function(u) {
-                const userTotalSec = Math.max(u.totalSeconds || 0, u.dailySeconds || 0);
+                // 월간 통계 역시 당일 가상 리셋 로직 적용
+                const userDailySec = (u.lastResetDate && u.lastResetDate !== current3AM) ? 0 : (u.dailySeconds || 0);
+                const userTotalSec = Math.max(u.totalSeconds || 0, userDailySec);
                 const totalH = Math.floor(userTotalSec / 3600);
                 const totalM = Math.floor((userTotalSec % 3600) / 60);
 

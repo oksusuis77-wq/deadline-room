@@ -194,7 +194,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // ★ 결정적 문제 해결: 엉뚱한 새 방(users)이 아닌 기존 동료들이 있는 원래 방으로 정확히 연결합니다.
         const DB_COLLECTION = 'artifacts/app/users';
         const GOAL_SECONDS = 2 * 60 * 60; 
         
@@ -365,7 +364,8 @@
                         let seconds = Number(data.seconds);
                         if (isNaN(seconds) || seconds < 0) seconds = 0;
 
-                        let hearts = Number(data.hearts);
+                        // ★ 데이터에 하트 기록이 없으면 기본값 3을 주도록 수정된 부분
+                        let hearts = data.hearts === undefined ? 3 : Number(data.hearts);
                         if (isNaN(hearts) || hearts < 0) hearts = 0;
 
                         let lastActiveMs = 0;

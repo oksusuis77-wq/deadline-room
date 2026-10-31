@@ -19,6 +19,12 @@
         .video-blur { filter: blur(4px); }
         .hidden-safely { display: none !important; }
         .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
+        
+        /* 토스트 알림 애니메이션 */
+        .toast-enter { transform: translateY(100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .toast-exit { transform: translateY(0); opacity: 1; }
+        .toast-exit-active { transform: translateY(100%); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-gray-200">
@@ -52,16 +58,17 @@
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- 비디오 영역 -->
                 <div class="lg:w-2/3 space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-4 gap-4">
+                    <div class="flex flex-col xl:flex-row xl:justify-between xl:items-end mb-4 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900">실시간 집필실</h2>
                             <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
                         </div>
-                        <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex-wrap">
                             <label class="flex items-center gap-2 cursor-pointer font-bold px-2 text-gray-700">
                                 <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900" checked> 모자이크
                             </label>
                             <div class="w-px h-5 bg-gray-200"></div>
+                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-bold hover:bg-gray-200 transition">웹캠</button>
                             <button id="btn-screen" onclick="window.startStream('screen')" class="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition">화면공유</button>
                             <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 transition">중지</button>
                         </div>
@@ -70,10 +77,9 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="video-grid">
                         <div class="bg-white card-shadow border border-gray-100 rounded-2xl overflow-hidden relative aspect-[4/3] flex items-center justify-center">
                             <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-20" autoplay playsinline muted></video>
-                            <div class="z-10 font-bold text-gray-400">내 화면 대기중</div>
+                            <div class="z-10 font-bold text-gray-400">대기 중</div>
                             <div class="absolute top-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-30 font-bold">나 (<span id="my-time-display">00:00</span>)</div>
                         </div>
-                        <!-- 다른 유저 비디오 삽입 공간 -->
                     </div>
                 </div>
 
@@ -87,8 +93,13 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 text-center">
-                        <h3 class="font-bold text-lg mb-4 text-gray-900">개인 뽀모도로</h3>
+                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 text-center relative">
+                        <div class="absolute top-6 right-6">
+                            <button id="btn-mute" class="text-gray-400 hover:text-gray-900 transition-colors" title="소리 켜기/끄기">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2.586l3.707 3.707a1 1 0 001.707-.707V4.95a1 1 0 00-1.707-.707L9.586 8H7a2 2 0 00-2 2z"></path></svg>
+                            </button>
+                        </div>
+                        <h3 class="font-bold text-lg mb-4 text-gray-900 text-left">개인 뽀모도로</h3>
                         <div class="text-6xl font-light text-gray-900 mb-6 tabular-nums" id="pomo-display">25:00</div>
                         <button id="btn-pomo-start" class="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold mb-6 hover:bg-gray-800 transition shadow-md">집중 시작하기</button>
                         <div id="tomato-container" class="flex flex-wrap justify-center gap-1 text-2xl min-h-[32px]"></div>
@@ -99,6 +110,7 @@
 
         <!-- 탭 2: Log (현황판) -->
         <section id="tab-community" class="tab-content space-y-8">
+            <!-- (현황판 UI 동일하게 유지됨) -->
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
                     <h2 class="text-3xl font-bold text-gray-900">동료 작가 마감 현황</h2>
@@ -111,17 +123,39 @@
                     </h4>
                     <ul class="space-y-2 text-sm">
                         <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 하루 2시간 이상 작업 필수</li>
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 새벽 3시 기준 미달성 시 하트 1개 감소 (생명 0개 시 퇴출)</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 새벽 3시 기준 미달성 시 하트 1개 감소</li>
                     </ul>
                 </div>
             </div>
-
-            <!-- 복구된 유저 리스트 영역 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="community-list"></div>
         </section>
     </main>
 
+    <!-- 토스트 알림 컨테이너 -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
     <script>
+        // 토스트 알림 함수
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 toast-enter pointer-events-auto';
+            toast.innerHTML = `<span class="font-bold">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-enter-active');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit-active');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
         // 탭 전환 로직
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -141,9 +175,9 @@
             localStorage.setItem('dr_nick', nick);
             document.getElementById('login-overlay').classList.add('hidden-safely');
             window.dispatchEvent(new CustomEvent('init-app', { detail: nick }));
+            showToast(`환영합니다, ${nick} 작가님!`);
         }
 
-        // 기존 로그인 정보 있으면 자동 넘김
         window.addEventListener('DOMContentLoaded', () => {
             const saved = localStorage.getItem('dr_nick');
             if(saved) {
@@ -179,12 +213,9 @@
         let peer = null;
         let mediaStream = null;
 
-        // 새벽 3시 기준 논리적 날짜 계산
         function getLogicalDate() {
             let d = new Date();
-            if(d.getHours() < 3) {
-                d.setDate(d.getDate() - 1);
-            }
+            if(d.getHours() < 3) d.setDate(d.getDate() - 1);
             return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
         }
 
@@ -197,7 +228,6 @@
 
         window.addEventListener('init-app', async (e) => {
             myNick = e.detail;
-            
             try {
                 const cred = await signInAnonymously(auth);
                 uid = cred.user.uid;
@@ -208,13 +238,9 @@
                 
                 if (snap.exists()) {
                     let data = snap.data();
-                    // 날짜가 바뀌었을 때 (새벽 3시 지남) 2시간 체크 후 리셋
                     if (data.lastResetDate !== today) {
                         let currentHearts = data.hearts;
-                        if (data.seconds < GOAL_SECONDS) {
-                            currentHearts = Math.max(0, currentHearts - 1);
-                        }
-                        // 뽀모도로, 초 모두 리셋
+                        if (data.seconds < GOAL_SECONDS) currentHearts = Math.max(0, currentHearts - 1);
                         myData = { seconds: 0, tomatoes: 0, hearts: currentHearts, lastResetDate: today };
                     } else {
                         myData = { seconds: data.seconds || 0, tomatoes: data.tomatoes || 0, hearts: data.hearts || 3, lastResetDate: data.lastResetDate };
@@ -224,59 +250,55 @@
                 }
                 
                 await setDoc(userRef, {
-                    nickname: myNick,
-                    seconds: myData.seconds,
-                    tomatoes: myData.tomatoes,
-                    hearts: myData.hearts,
-                    lastResetDate: myData.lastResetDate,
-                    lastActive: serverTimestamp(),
-                    isOnline: true
+                    nickname: myNick, seconds: myData.seconds, tomatoes: myData.tomatoes,
+                    hearts: myData.hearts, lastResetDate: myData.lastResetDate,
+                    lastActive: serverTimestamp(), isOnline: true
                 }, { merge: true });
 
                 updateUI();
                 startHeartbeat();
                 initWebRTC();
                 listenToOthers();
-
             } catch (err) {
-                console.error("Firebase Auth Error: ", err);
-                alert("로그인에 실패했습니다.");
+                console.error("Firebase Error: ", err);
+                showToast("로그인에 실패했습니다.");
             }
         });
 
-        // 30초마다 내가 살아있음을 DB에 알림 (오프라인 판별용)
         function startHeartbeat() {
             setInterval(() => {
-                if(!uid) return;
-                updateDoc(doc(db, DB_COLLECTION, uid), {
-                    lastActive: serverTimestamp(),
-                    isOnline: true
-                });
+                if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { lastActive: serverTimestamp(), isOnline: true });
             }, 30000);
         }
 
-        // 화면 공유 시작
+        // 웹캠 및 화면공유 통합
         window.startStream = async (type) => {
             try {
-                mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                if(type === 'screen') {
+                    mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                    showToast("화면 공유가 시작되었습니다.");
+                } else {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    showToast("웹캠 공유가 시작되었습니다.");
+                }
+                
                 document.getElementById('video-element').srcObject = mediaStream;
                 document.getElementById('video-element').classList.remove('hidden-safely');
                 document.getElementById('btn-screen').classList.add('hidden-safely');
+                document.getElementById('btn-cam').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely');
                 
                 workInterval = setInterval(() => {
                     myData.seconds += 1;
                     updateUI(); 
-                    if(myData.seconds % 60 === 0) { // DB는 1분마다 갱신
-                        updateDoc(doc(db, DB_COLLECTION, uid), { seconds: myData.seconds });
-                    }
+                    if(myData.seconds === GOAL_SECONDS) showToast("🎉 축하합니다! 오늘의 목표 마감(2시간)을 달성했습니다.");
+                    if(myData.seconds % 60 === 0) updateDoc(doc(db, DB_COLLECTION, uid), { seconds: myData.seconds });
                 }, 1000);
 
                 mediaStream.getVideoTracks()[0].onended = () => { window.stopStream(); };
-
             } catch (e) {
                 console.error(e);
-                alert("화면 공유를 취소했거나 권한이 없습니다.");
+                showToast("공유를 취소했거나 권한이 없습니다.");
             }
         };
 
@@ -284,28 +306,23 @@
             if(mediaStream) mediaStream.getTracks().forEach(track => track.stop());
             document.getElementById('video-element').classList.add('hidden-safely');
             document.getElementById('btn-screen').classList.remove('hidden-safely');
+            document.getElementById('btn-cam').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
             clearInterval(workInterval);
+            showToast("작업이 일시 중지되었습니다.");
         };
 
         function updateUI() {
             const timeStr = formatTime(myData.seconds);
             document.getElementById('my-time-display').innerText = timeStr;
             document.getElementById('daily-time-display').innerText = timeStr;
-            
             const pct = Math.min(100, (myData.seconds / GOAL_SECONDS) * 100);
             document.getElementById('progress-bar').style.width = pct + '%';
             
-            let heartStr = '';
-            for(let i=0; i<myData.hearts; i++) heartStr += '❤️';
-            document.getElementById('my-hearts').innerText = heartStr || '💔 퇴출 위기';
-
-            let tomatoStr = '';
-            for(let i=0; i<myData.tomatoes; i++) tomatoStr += '🍅';
-            document.getElementById('tomato-container').innerText = tomatoStr;
+            document.getElementById('my-hearts').innerText = '❤️'.repeat(myData.hearts) || '💔 퇴출 위기';
+            document.getElementById('tomato-container').innerText = '🍅'.repeat(myData.tomatoes);
         }
 
-        // 다른 유저 상태 리스닝 (Log 탭 UI 복구 완료)
         function listenToOthers() {
             onSnapshot(collection(db, DB_COLLECTION), (snapshot) => {
                 const now = Date.now();
@@ -316,27 +333,24 @@
                     const data = docSnap.data();
                     if(docSnap.id === uid) return;
 
-                    // 1분 이상 업데이트 없으면 오프라인
                     const lastActiveMs = data.lastActive ? data.lastActive.toMillis() : 0;
                     const isOffline = (now - lastActiveMs) > 60000;
 
-                    // 오프라인 유저 비디오 DOM 삭제
                     if(isOffline) {
                         const staleVideo = document.getElementById(`video-box-${docSnap.id}`);
                         if(staleVideo) staleVideo.remove();
                     }
 
-                    // 현황판 카드 UI 렌더링
                     const timeTxt = formatTime(data.seconds || 0);
-                    let heartTxt = ''; for(let i=0; i<(data.hearts||0); i++) heartTxt+='❤️';
-                    let tomatoTxt = ''; for(let i=0; i<(data.tomatoes||0); i++) tomatoTxt+='🍅';
+                    let heartTxt = '❤️'.repeat(data.hearts||0);
+                    let tomatoTxt = '🍅'.repeat(data.tomatoes||0);
                     
                     const statusColor = isOffline ? 'bg-gray-300' : 'bg-green-500';
                     const statusText = isOffline ? '오프라인' : '접속 중';
                     const statusTextColor = isOffline ? 'text-gray-400' : 'text-green-500 font-bold';
 
                     logList.innerHTML += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between card-shadow hover:scale-[1.01] transition-transform">
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between card-shadow">
                             <div class="flex items-center gap-4">
                                 <div class="relative">
                                     <div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xl font-bold text-gray-700">
@@ -361,13 +375,38 @@
             });
         }
 
-        // 뽀모도로
+        // 뽀모도로 음소거 및 알림음 로직
+        let isMuted = false;
+        document.getElementById('btn-mute').addEventListener('click', (e) => {
+            isMuted = !isMuted;
+            const btn = e.currentTarget;
+            if (isMuted) {
+                btn.innerHTML = `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>`;
+                showToast("뽀모도로 알림음이 음소거되었습니다.");
+            } else {
+                btn.innerHTML = `<svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2.586l3.707 3.707a1 1 0 001.707-.707V4.95a1 1 0 00-1.707-.707L9.586 8H7a2 2 0 00-2 2z"></path></svg>`;
+                showToast("뽀모도로 알림음이 켜졌습니다.");
+            }
+        });
+
+        function playBeep() {
+            if (isMuted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.connect(ctx.destination);
+                osc.frequency.value = 800;
+                osc.start();
+                setTimeout(() => osc.stop(), 500);
+            } catch (e) { console.log("오디오 재생 실패", e); }
+        }
+
+        // 뽀모도로 타이머 로직
         let pomoTime = 25 * 60;
         let pomoTimer = null;
         document.getElementById('btn-pomo-start').addEventListener('click', () => {
             const btn = document.getElementById('btn-pomo-start');
             if(pomoTimer) {
-                // 일시정지 로직
                 clearInterval(pomoTimer);
                 pomoTimer = null;
                 btn.innerText = "집중 다시 시작";
@@ -393,7 +432,8 @@
                     updateUI();
                     btn.innerText = "집중 시작하기";
                     btn.classList.replace('bg-red-500', 'bg-gray-900');
-                    alert("뽀모도로 완료! 토마토를 획득했습니다. 잠시 휴식하세요.");
+                    playBeep();
+                    showToast("🍅 뽀모도로 완료! 토마토를 획득했습니다. 5분간 휴식하세요.");
                 }
             }, 1000);
         });
@@ -402,7 +442,6 @@
             if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isOnline: false });
         });
 
-        // WebRTC P2P 화면 수신
         function initWebRTC() {
             peer = new Peer(uid);
             peer.on('call', call => {

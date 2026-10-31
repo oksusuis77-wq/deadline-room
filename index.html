@@ -20,7 +20,6 @@
         .hidden-safely { display: none !important; }
         .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
         
-        /* 토스트 알림 애니메이션 */
         .toast-enter { transform: translateY(100%); opacity: 0; }
         .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .toast-exit { transform: translateY(0); opacity: 1; }
@@ -110,7 +109,6 @@
 
         <!-- 탭 2: Log (현황판) -->
         <section id="tab-community" class="tab-content space-y-8">
-            <!-- (현황판 UI 동일하게 유지됨) -->
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
                     <h2 class="text-3xl font-bold text-gray-900">동료 작가 마감 현황</h2>
@@ -123,10 +121,11 @@
                     </h4>
                     <ul class="space-y-2 text-sm">
                         <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 하루 2시간 이상 작업 필수</li>
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 새벽 3시 기준 미달성 시 하트 1개 감소</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5회 이상 2시간 작업 미달성 시 하트가 하나씩 차감 (매일 새벽 3시 갱신)</li>
                     </ul>
                 </div>
             </div>
+            <!-- 복구 및 강화된 유저 리스트 영역 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="community-list"></div>
         </section>
     </main>
@@ -135,7 +134,6 @@
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script>
-        // 토스트 알림 함수
         function showToast(message) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -156,7 +154,6 @@
             }, 3500);
         }
 
-        // 탭 전환 로직
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-gray-900', 'text-gray-400'));
@@ -208,7 +205,7 @@
         
         let myNick = '';
         let uid = '';
-        let myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: '' };
+        let myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: '', yesterdaySuccess: true };
         let workInterval = null;
         let peer = null;
         let mediaStream = null;
@@ -240,18 +237,27 @@
                     let data = snap.data();
                     if (data.lastResetDate !== today) {
                         let currentHearts = data.hearts;
-                        if (data.seconds < GOAL_SECONDS) currentHearts = Math.max(0, currentHearts - 1);
-                        myData = { seconds: 0, tomatoes: 0, hearts: currentHearts, lastResetDate: today };
+                        let ySuccess = true;
+                        // 전날 2시간 미만 시 실패 기록 및 하트 차감
+                        if (data.seconds < GOAL_SECONDS) {
+                            currentHearts = Math.max(0, currentHearts - 1);
+                            ySuccess = false;
+                        }
+                        myData = { seconds: 0, tomatoes: 0, hearts: currentHearts, lastResetDate: today, yesterdaySuccess: ySuccess };
                     } else {
-                        myData = { seconds: data.seconds || 0, tomatoes: data.tomatoes || 0, hearts: data.hearts || 3, lastResetDate: data.lastResetDate };
+                        myData = { 
+                            seconds: data.seconds || 0, tomatoes: data.tomatoes || 0, 
+                            hearts: data.hearts || 3, lastResetDate: data.lastResetDate, 
+                            yesterdaySuccess: data.yesterdaySuccess ?? true 
+                        };
                     }
                 } else {
-                    myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: today };
+                    myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: today, yesterdaySuccess: true };
                 }
                 
                 await setDoc(userRef, {
                     nickname: myNick, seconds: myData.seconds, tomatoes: myData.tomatoes,
-                    hearts: myData.hearts, lastResetDate: myData.lastResetDate,
+                    hearts: myData.hearts, lastResetDate: myData.lastResetDate, yesterdaySuccess: myData.yesterdaySuccess,
                     lastActive: serverTimestamp(), isOnline: true
                 }, { merge: true });
 
@@ -271,7 +277,6 @@
             }, 30000);
         }
 
-        // 웹캠 및 화면공유 통합
         window.startStream = async (type) => {
             try {
                 if(type === 'screen') {
@@ -323,6 +328,7 @@
             document.getElementById('tomato-container').innerText = '🍅'.repeat(myData.tomatoes);
         }
 
+        // Log 탭 렌더링 로직 (나를 포함하여 렌더링하도록 변경 및 UI 대폭 강화)
         function listenToOthers() {
             onSnapshot(collection(db, DB_COLLECTION), (snapshot) => {
                 const now = Date.now();
@@ -331,43 +337,70 @@
                 
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    if(docSnap.id === uid) return;
 
                     const lastActiveMs = data.lastActive ? data.lastActive.toMillis() : 0;
                     const isOffline = (now - lastActiveMs) > 60000;
 
-                    if(isOffline) {
+                    // 오프라인 유저 비디오 삭제 로직
+                    if(isOffline && docSnap.id !== uid) {
                         const staleVideo = document.getElementById(`video-box-${docSnap.id}`);
                         if(staleVideo) staleVideo.remove();
                     }
 
+                    // 현황판 카드 구성
                     const timeTxt = formatTime(data.seconds || 0);
-                    let heartTxt = '❤️'.repeat(data.hearts||0);
-                    let tomatoTxt = '🍅'.repeat(data.tomatoes||0);
+                    let heartTxt = '❤️'.repeat(data.hearts||0) || '💔 (0)';
+                    const progressPct = Math.min(100, ((data.seconds || 0) / GOAL_SECONDS) * 100);
                     
                     const statusColor = isOffline ? 'bg-gray-300' : 'bg-green-500';
                     const statusText = isOffline ? '오프라인' : '접속 중';
                     const statusTextColor = isOffline ? 'text-gray-400' : 'text-green-500 font-bold';
+                    
+                    // 금요일(어제) 내역은 DB의 yesterdaySuccess 값 참조, 나머지는 무조건 😊
+                    const fridayFace = (data.yesterdaySuccess ?? true) ? '😊' : '😢';
+                    
+                    // 내 카드인 경우 닉네임 옆에 (나) 표시
+                    const displayName = docSnap.id === uid ? `${data.nickname} <span class="text-indigo-500 text-sm">(나)</span>` : data.nickname;
 
                     logList.innerHTML += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between card-shadow">
-                            <div class="flex items-center gap-4">
-                                <div class="relative">
-                                    <div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xl font-bold text-gray-700">
-                                        ${data.nickname.charAt(0)}
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-5 card-shadow hover:scale-[1.01] transition-transform">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="relative">
+                                        <div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xl font-bold text-gray-700">
+                                            ${data.nickname.charAt(0)}
+                                        </div>
+                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${statusColor}"></div>
                                     </div>
-                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${statusColor}"></div>
+                                    <div>
+                                        <h4 class="font-bold text-lg text-gray-900">${displayName}</h4>
+                                        <div class="text-sm text-gray-500 mt-0.5">남은 생명: ${heartTxt}</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 class="font-bold text-lg text-gray-900">${data.nickname}</h4>
-                                    <div class="text-sm text-gray-500 mt-0.5">
-                                        ${heartTxt || '💔'} ${tomatoTxt ? '<span class="ml-2 border-l border-gray-200 pl-2">' + tomatoTxt + '</span>' : ''}
-                                    </div>
+                                <div class="text-right">
+                                    <div class="text-sm ${statusTextColor}">${statusText}</div>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <div class="text-2xl font-bold text-gray-900 tracking-tight">${timeTxt}</div>
-                                <div class="text-sm mt-0.5 ${statusTextColor}">${statusText}</div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1.5">
+                                    <span class="font-bold text-gray-700">오늘의 마감 목표 (2시간)</span>
+                                    <span class="font-bold text-gray-900">${timeTxt}</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2.5 mb-4">
+                                    <div class="bg-gray-900 h-full rounded-full transition-all" style="width: ${progressPct}%;"></div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center bg-gray-50 p-3.5 rounded-xl text-sm border border-gray-100">
+                                    <span class="font-bold text-gray-600">이번 주 달성 기록</span>
+                                    <div class="flex gap-2.5 text-lg">
+                                        <span title="월요일">😊</span>
+                                        <span title="화요일">😊</span>
+                                        <span title="수요일">😊</span>
+                                        <span title="목요일">😊</span>
+                                        <span title="금요일(어제 내역)">${fridayFace}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -375,7 +408,6 @@
             });
         }
 
-        // 뽀모도로 음소거 및 알림음 로직
         let isMuted = false;
         document.getElementById('btn-mute').addEventListener('click', (e) => {
             isMuted = !isMuted;
@@ -398,10 +430,9 @@
                 osc.frequency.value = 800;
                 osc.start();
                 setTimeout(() => osc.stop(), 500);
-            } catch (e) { console.log("오디오 재생 실패", e); }
+            } catch (e) {}
         }
 
-        // 뽀모도로 타이머 로직
         let pomoTime = 25 * 60;
         let pomoTimer = null;
         document.getElementById('btn-pomo-start').addEventListener('click', () => {

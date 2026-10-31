@@ -12,1129 +12,369 @@
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
             font-weight: normal; font-style: normal; font-display: swap;
         }
-        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FAFAFA; color: #111827; font-size: 1.15rem; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
-
-        .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
-        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.03); }
+        body { font-family: 'LeeSeoyun', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #FAFAFA; color: #111827; }
         
         .tab-content { display: none; opacity: 0; transition: opacity 0.4s ease; }
         .tab-content.active { display: block; opacity: 1; }
-        
-        .video-blur { filter: blur(4px) brightness(0.95); }
+        .video-blur { filter: blur(4px); }
         .hidden-safely { display: none !important; }
-        .goal-completed { text-decoration: line-through; color: #9CA3AF; }
-
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .tomato-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-gray-200 overflow-hidden">
-
-    <!-- 다같이 뽀모 모달 -->
-    <div id="group-pomo-modal" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[70] hidden-safely flex items-center justify-center">
-        <div class="bg-white rounded-3xl p-6 card-shadow max-w-sm w-full mx-4">
-            <h3 class="text-xl font-bold text-gray-900 mb-1">다같이 뽀모 시작</h3>
-            <p class="text-sm text-gray-500 mb-4">함께 집중할 작가님을 선택하세요.</p>
-            <div id="group-pomo-user-list" class="max-h-48 overflow-y-auto space-y-2 mb-6 p-1"></div>
-            <div class="flex gap-3">
-                <button onclick="document.getElementById('group-pomo-modal').classList.add('hidden-safely')" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">취소</button>
-                <button onclick="window.startGroupPomo()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-md">함께 시작!</button>
-            </div>
-        </div>
-    </div>
+<body class="min-h-screen flex flex-col selection:bg-gray-200">
 
     <!-- 로그인 오버레이 -->
     <div id="login-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-50 flex items-center justify-center">
-        <div class="bg-white rounded-3xl p-8 card-shadow max-w-md w-full mx-4 text-center">
-            <div class="w-16 h-16 bg-gray-900 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">M</div>
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">마감방 입장</h2>
-            <div class="space-y-4 mt-4">
-                <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-xl focus:ring-2 focus:ring-gray-900 outline-none font-bold text-gray-900" placeholder="닉네임 (예: 김작가)" onkeyup="if(event.key==='Enter') window.doLogin()">
-                <button type="button" onclick="window.doLogin()" class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-xl hover:bg-gray-800 transition-colors shadow-lg cursor-pointer">입장하기</button>
-            </div>
+        <div class="bg-white rounded-3xl p-8 shadow-xl max-w-md w-full mx-4 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">마감방 입장</h2>
+            <input type="text" id="nickname-input" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 text-center text-xl mb-4" placeholder="닉네임 (예: 김작가)">
+            <button type="button" onclick="window.doLogin()" class="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-xl hover:bg-gray-800 transition">입장하기</button>
         </div>
     </div>
 
-    <!-- 토스트 알림 -->
-    <div id="toast-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[60] hidden-safely transition-all duration-300">
-        <div id="toast-message" class="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-medium text-base flex items-center gap-2"></div>
-    </div>
-
     <!-- 헤더 -->
-    <header class="glass-header sticky top-0 z-40">
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-xl leading-none shadow-sm">M</div>
-                <h1 class="text-2xl font-bold tracking-tight text-gray-900">마감방</h1>
-            </div>
-            
-            <nav class="hidden md:flex items-center gap-10 text-lg">
-                <button class="nav-btn text-gray-900 font-bold border-b-2 border-gray-900 pb-1 transition-colors" data-target="tab-room">집필실</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1 transition-colors" data-target="tab-community">Log</button>
-                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1 transition-colors" data-target="tab-personal">Personal</button>
+            <h1 class="text-2xl font-bold text-gray-900">마감방</h1>
+            <nav class="flex items-center gap-8 text-lg">
+                <button class="nav-btn text-gray-900 font-bold border-b-2 border-gray-900 pb-1" data-target="tab-room">집필실</button>
+                <button class="nav-btn text-gray-400 hover:text-gray-900 font-bold pb-1" data-target="tab-community">Log</button>
             </nav>
-
-            <div class="flex items-center gap-3">
-                <div id="auth-status" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
-                <span id="user-info" class="text-sm text-gray-600 font-bold hidden md:block">연결 대기중...</span>
+            <div class="flex items-center gap-2 font-bold">
+                생명: <span id="my-hearts" class="text-red-500">❤️❤️❤️</span>
             </div>
         </div>
     </header>
 
-    <!-- 메인 컨텐츠 -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 w-full py-8">
-        
+    <main class="flex-grow max-w-7xl mx-auto px-6 w-full py-8">
         <!-- 탭 1: 집필실 -->
         <section id="tab-room" class="tab-content active space-y-8">
-            <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
-                <span class="text-gray-700 font-bold text-lg whitespace-nowrap sm:pl-2">오늘의 목표</span>
-                <input type="text" id="room-goal-input" class="flex-1 w-full bg-transparent border-none outline-none text-gray-900 px-2 text-center sm:text-left text-lg font-medium" placeholder="마감 목표를 한 줄로 적어주세요 (예: 15화 초고 완성)">
-                <button id="btn-save-goal" class="w-full sm:w-auto px-8 py-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-colors font-bold cursor-pointer text-base">저장</button>
-            </div>
-
             <div class="flex flex-col lg:flex-row gap-8">
-                <!-- 화면 공유 영역 -->
-                <div class="lg:w-2/3 space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                        <div>
-                            <h2 class="text-3xl font-bold text-gray-900">함께 마감하는 집필실</h2>
-                            <p class="text-gray-500 text-base mt-1">서로의 마감을 응원합니다</p>
-                        </div>
-                        
-                        <div class="flex items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100">
-                            <label class="flex items-center gap-2 px-3 text-base cursor-pointer text-gray-700 hover:text-gray-900">
-                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900 focus:ring-gray-900" checked>
-                                <span class="font-bold">모자이크</span>
+                <!-- 비디오 영역 -->
+                <div class="lg:w-2/3 space-y-4">
+                    <div class="flex justify-between items-end mb-4">
+                        <h2 class="text-2xl font-bold text-gray-900">실시간 집필실</h2>
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer font-bold">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900" checked> 화면 모자이크
                             </label>
-                            <div class="w-px h-6 bg-gray-200"></div>
-                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-base font-bold cursor-pointer">웹캠</button>
-                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-base font-bold cursor-pointer">화면공유</button>
-                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-base font-bold cursor-pointer">중지</button>
+                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold">화면공유</button>
+                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold">중지</button>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="video-grid">
-                        <div class="bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] flex items-center justify-center">
-                            <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-40" autoplay playsinline muted></video>
-                            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-10">
-                                <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-4 text-gray-400 font-bold text-3xl">나</div>
-                                <p class="text-base font-bold text-gray-400">내 화면 대기중</p>
-                            </div>
-                            <div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">
-                                <span id="live-indicator" class="w-2 h-2 rounded-full bg-red-500 hidden-safely animate-pulse"></span>
-                                나 (<span class="daily-time-display">00:00:00</span>)
-                            </div>
+                    
+                    <div class="grid grid-cols-2 gap-4" id="video-grid">
+                        <div class="bg-gray-100 rounded-2xl overflow-hidden relative aspect-video flex items-center justify-center">
+                            <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-20" autoplay playsinline muted></video>
+                            <div class="z-10 font-bold text-gray-400">내 화면 대기중</div>
+                            <div class="absolute top-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-30">나 (<span id="my-time-display">00:00</span>)</div>
                         </div>
-                        <div id="other-users-grid" class="contents"></div>
+                        <!-- 다른 유저 비디오 삽입 공간 -->
                     </div>
                 </div>
 
-                <!-- 타이머 & 뽀모도로 영역 -->
+                <!-- 뽀모도로 및 진행도 영역 -->
                 <div class="lg:w-1/3 flex flex-col gap-6">
-                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-xl text-gray-900">하루 2시간 챌린지</h3>
-                            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">매일 AM 03:00 리셋</span>
-                        </div>
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-3xl font-light text-gray-900 daily-time-display">00:00:00</span>
-                            <span class="text-gray-400 text-base font-bold" id="progress-percent">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                            <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all duration-1000 w-0"></div>
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-lg mb-2">오늘의 마감 (2시간 목표)</h3>
+                        <div class="text-3xl font-bold text-gray-900 mb-2" id="daily-time-display">00:00</div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div id="progress-bar" class="bg-gray-900 h-full rounded-full transition-all" style="width: 0%;"></div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 text-center relative overflow-hidden flex-1 flex flex-col justify-center min-h-[260px]">
-                        <button id="btn-pomo-mute" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors z-20" title="알림음 켜기/끄기">
-                            <span id="pomo-sound-icon" class="text-xl">🔊</span>
-                        </button>
-                        
-                        <div class="absolute inset-0 bg-gray-50 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear" id="pomo-bg-fill" style="z-index: 0;"></div>
-                        <div class="relative z-10">
-                            <div class="flex justify-center gap-1 mb-4 bg-gray-100 p-1 rounded-full w-max mx-auto border border-gray-200/50 shadow-inner">
-                                <button id="pomo-type-personal" class="px-4 py-1 rounded-full text-xs font-bold bg-white text-gray-900 shadow-sm transition-all duration-300">개인 뽀모</button>
-                                <button id="pomo-type-group" class="px-4 py-1 rounded-full text-xs font-bold text-gray-400 hover:text-gray-700 transition-all duration-300">다같이 뽀모</button>
-                            </div>
-
-                            <div class="flex justify-center gap-2 mb-4">
-                                <button id="mode-work" class="px-4 py-1.5 rounded-full text-sm font-bold bg-gray-900 text-white shadow-md cursor-pointer transition-all">집중 25분</button>
-                                <button id="mode-break" class="px-4 py-1.5 rounded-full text-sm font-bold text-gray-400 hover:bg-gray-100 cursor-pointer transition-all">휴식 5분</button>
-                            </div>
-                            
-                            <div class="text-6xl font-light tracking-tighter text-gray-900 mb-5 tabular-nums leading-none" id="pomo-display">25:00</div>
-                            
-                            <div class="flex justify-center gap-2 mb-4">
-                                <button id="btn-pomo-start" class="w-28 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold shadow-lg text-sm cursor-pointer">시작하기</button>
-                                <button id="btn-pomo-reset" class="w-12 py-3 bg-white border-2 border-gray-100 text-gray-400 hover:text-gray-900 rounded-xl flex items-center justify-center cursor-pointer">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                </button>
-                            </div>
-
-                            <div id="tomato-container" class="flex flex-wrap justify-center gap-1 min-h-[28px] text-xl"></div>
-                        </div>
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center">
+                        <h3 class="font-bold text-lg mb-4">뽀모도로 타이머</h3>
+                        <div class="text-5xl font-light text-gray-900 mb-4" id="pomo-display">25:00</div>
+                        <button id="btn-pomo-start" class="px-6 py-2 bg-gray-900 text-white rounded-lg font-bold mb-4">시작</button>
+                        <div id="tomato-container" class="flex flex-wrap justify-center gap-1 text-xl min-h-[30px]"></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 탭 2: Log -->
-        <section id="tab-community" class="tab-content space-y-8">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-                <div>
-                    <h2 class="text-3xl font-bold text-gray-900">동료 작가 마감 현황</h2>
-                    <p class="text-gray-500 text-base mt-1">서로의 마감을 응원합니다 (매일 오전 3시 리셋)</p>
-                </div>
-                <div class="bg-white p-6 rounded-3xl border border-gray-100 card-shadow text-base text-gray-600">
-                    <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2 text-lg">
-                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        마감방 규칙
-                    </h4>
-                    <ul class="space-y-2 text-sm">
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5일 이상, 하루 2시간 이상 작업 필수</li>
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 미달성 시 하트 1개 감소 (생명 3개 차감 시 퇴출)</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-8" id="community-list"></div>
-
-            <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6 mt-12">
-                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <span>📊</span> 작가별 이번 달 결산 리포트
-                    </h3>
-                    <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-xl" id="month-label">이번달 현황</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="monthly-author-grid"></div>
-            </div>
-        </section>
-
-        <!-- 탭 3: Personal -->
-        <section id="tab-personal" class="tab-content space-y-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
-                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>이번 주 총 집필</span><span class="text-xl">⏱️</span>
-                    </div>
-                    <div id="ps-total-time" class="text-3xl font-bold text-gray-900">0시간 0분</div>
-                    <p class="text-xs text-indigo-600 font-bold mt-2">차곡차곡 쌓이는 중 🔥</p>
-                </div>
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
-                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>일평균 집필</span><span class="text-xl">📊</span>
-                    </div>
-                    <div id="ps-avg-time" class="text-3xl font-bold text-gray-900">0시간 0분</div>
-                    <p id="ps-avg-msg" class="text-xs text-gray-400 font-bold mt-2">매일 꾸준히 해봐요!</p>
-                </div>
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
-                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>최고 마감 요일</span><span class="text-xl">🔥</span>
-                    </div>
-                    <div id="ps-best-day" class="text-3xl font-bold text-gray-900">-</div>
-                    <p id="ps-best-day-msg" class="text-xs text-indigo-600 font-bold mt-2">데이터 수집 중</p>
-                </div>
-                <div class="bg-white rounded-3xl p-6 card-shadow border border-gray-100 flex flex-col justify-between">
-                    <div class="flex justify-between items-center text-gray-400 text-sm font-bold mb-2">
-                        <span>집필 골든 타임</span><span class="text-xl">🌙</span>
-                    </div>
-                    <div id="ps-golden-time" class="text-3xl font-bold text-gray-900">-</div>
-                    <p id="ps-golden-msg" class="text-xs text-amber-600 font-bold mt-2">데이터 수집 중</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
-                    <div class="flex justify-between items-center border-b border-gray-50 pb-4">
-                        <h3 class="text-2xl font-bold text-gray-900">최근 7일 집필 기록</h3>
-                        <span class="text-sm font-bold text-gray-400">단위: 시간</span>
-                    </div>
-                    <div class="flex items-end justify-between h-48 pt-6 px-4">
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-mon" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-mon" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">월</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-tue" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-tue" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">화</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-wed" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-wed" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">수</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-thu" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-thu" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">목</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-fri" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-fri" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">금</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-sat" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-sat" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">토</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 h-full justify-end">
-                            <span id="ps-text-sun" class="text-xs font-bold text-gray-400">0.0h</span>
-                            <div id="ps-bar-sun" class="w-8 bg-gray-100 rounded-xl transition-all duration-700" style="height: 5%;"></div>
-                            <span class="text-xs font-bold text-gray-400">일</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
-                    <h3 class="text-2xl font-bold text-gray-900 border-b border-gray-50 pb-4">주요 작업 시간대</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">새벽 (00~06시)</span><span id="ps-pct-dawn" class="text-gray-900">0%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-dawn" class="bg-indigo-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오전 (06~12시)</span><span id="ps-pct-morning" class="text-gray-900">0%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-morning" class="bg-amber-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">오후 (12~18시)</span><span id="ps-pct-afternoon" class="text-gray-900">0%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-afternoon" class="bg-emerald-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-gray-600">야간 (18~24시)</span><span id="ps-pct-night" class="text-gray-900">0%</span></div>
-                            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden"><div id="ps-bar-night" class="bg-indigo-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div></div>
-                        </div>
-                    </div>
-                    <div id="ps-insight-box" class="bg-indigo-50/60 p-4 rounded-2xl text-xs text-indigo-900 font-bold leading-relaxed">
-                        💡 **Insight:** 데이터를 모으고 있어요! 충분히 기록되면 맞춤형 팁을 드릴게요.
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 space-y-6">
-                <div class="flex items-center justify-between border-b border-gray-50 pb-4">
-                    <h3 class="text-2xl font-bold text-gray-900">나의 마감 성과</h3>
-                    <span class="text-sm text-gray-400">목표 달성 시 체크해주세요!</span>
-                </div>
-                <div id="ps-goal-history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </div>
+        <!-- 탭 2: Log (현황판) -->
+        <section id="tab-community" class="tab-content space-y-6">
+            <h2 class="text-2xl font-bold text-gray-900">동료 작가 작업 현황</h2>
+            <div class="grid grid-cols-1 gap-4" id="community-list"></div>
         </section>
     </main>
 
-    <!-- UI 및 탭 제어 스크립트 -->
     <script>
-        window.myNickname = '';
-        function showToast(msg) {
-            var el = document.getElementById('toast-message'), container = document.getElementById('toast-container');
-            if(el && container) { el.textContent = msg; container.classList.remove('hidden-safely'); setTimeout(function(){ container.classList.add('hidden-safely'); }, 3000); }
-        }
-        window.doLogin = function() {
-            var input = document.getElementById('nickname-input');
-            var val = input ? input.value.trim() : '';
-            if (!val) return;
-            window.myNickname = val;
-            localStorage.setItem('deadline_room_nickname', val);
-            document.getElementById('login-overlay').style.setProperty('display', 'none', 'important');
-            document.body.classList.remove('overflow-hidden');
-            window.dispatchEvent(new CustomEvent('init-app', { detail: val }));
-        };
-        document.addEventListener('DOMContentLoaded', function() {
-            var navBtns = document.querySelectorAll('.nav-btn'), tabContents = document.querySelectorAll('.tab-content');
-            navBtns.forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    navBtns.forEach(function(b) { b.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900'); b.classList.add('text-gray-400'); });
-                    tabContents.forEach(function(c) { c.classList.remove('active'); });
-                    btn.classList.add('text-gray-900', 'border-b-2', 'border-gray-900');
-                    btn.classList.remove('text-gray-400');
-                    document.getElementById(btn.dataset.target).classList.add('active');
-                    if (btn.dataset.target === 'tab-community' && window.renderCommunityLog) window.renderCommunityLog();
-                    if (btn.dataset.target === 'tab-personal' && window.renderPersonalTab) window.renderPersonalTab();
-                });
+        // 탭 전환 로직
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-gray-900', 'text-gray-400'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('border-b-2', 'border-gray-900'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('text-gray-900', 'border-b-2', 'border-gray-900');
+                this.classList.remove('text-gray-400');
+                document.getElementById(this.dataset.target).classList.add('active');
             });
-            var saved = localStorage.getItem('deadline_room_nickname');
-            if (saved) { 
-                var input = document.getElementById('nickname-input');
-                if(input) input.value = saved; 
-                window.doLogin(); 
-            }
         });
+        
+        function doLogin() {
+            const nick = document.getElementById('nickname-input').value.trim();
+            if(!nick) return;
+            localStorage.setItem('dr_nick', nick);
+            document.getElementById('login-overlay').classList.add('hidden-safely');
+            window.dispatchEvent(new CustomEvent('init-app', { detail: nick }));
+        }
     </script>
 
-    <!-- Firebase 및 통신 모듈 스크립트 -->
+    <!-- Firebase 및 메인 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", authDomain: "deadline-room-768bf.firebaseapp.com", projectId: "deadline-room-768bf" };
-        let app, auth, db, currentUser = null, publicUsers = [];
-        let peer = null, myPeerId = null, currentCalls = {}, mediaStream = null, myNick = '';
-        let dailySharedSeconds = 0, totalSharedSeconds = 0, sharingInterval = null, lastTick = null; 
-        let myWeeklySeconds = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
-        let myTimeSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
-        const GOAL_SECONDS = 2 * 60 * 60;
-        let lastResetDateStr = '';
+        // [주의] 본인의 Firebase 설정값으로 변경 필요
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", 
+            authDomain: "deadline-room-768bf.firebaseapp.com", 
+            projectId: "deadline-room-768bf" 
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        const DB_COLLECTION = 'users';
+        const GOAL_SECONDS = 2 * 60 * 60; // 2시간
+        
+        let myNick = '';
+        let uid = '';
+        let myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: '' };
+        let workInterval = null;
+        let peer = null;
+        let mediaStream = null;
 
-        const DB_COLLECTION = 'artifacts/app/users';
-
-        // 뽀모도로 사운드 및 변수
-        const pomoAlarmSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        let isPomoMuted = false;
-        let lastPomoTriggerTime = 0;
-
-        function get3AMDateString(dateObj) {
-            const d = dateObj ? new Date(dateObj) : new Date();
-            d.setHours(d.getHours() - 3);
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        }
-
-        function get3AMDayIndex(dateObj) {
-            const d = dateObj ? new Date(dateObj) : new Date();
-            d.setHours(d.getHours() - 3);
-            const day = d.getDay(); 
-            return day === 0 ? 6 : day - 1; 
-        }
-
-        function makeSafeId(str) {
-            return 'card_' + encodeURIComponent(str).replace(/[^a-zA-Z0-9_-]/g, '_');
-        }
-
-        const dayNamesMap = ['월', '화', '수', '목', '금', '토', '일'];
-
-        window.addEventListener('init-app', function(e) { myNick = e.detail; initFirebase(); });
-
-        async function initFirebase() {
-            app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
-            const cred = await signInAnonymously(auth); currentUser = cred.user;
-            
-            document.getElementById('auth-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-            document.getElementById('user-info').textContent = myNick + ' (온라인)';
-            
-            const customIceServers = [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'turn:global.relay.metered.ca:80', username: 'b3b66b02e8b3db0c7fb62dcd', credential: 'UUa43LGXDD4OzNKa' },
-                { urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'b3b66b02e8b3db0c7fb62dcd', credential: 'UUa43LGXDD4OzNKa' }
-            ];
-
-            peer = new Peer({ config: { iceServers: customIceServers } });
-            
-            peer.on('open', function(id) { myPeerId = id; initUserProfile(); });
-
-            peer.on('call', function(call) {
-                call.answer(mediaStream || undefined);
-                currentCalls[call.peer] = call;
-                call.on('stream', function(stream) { addRemoteVideo(call.peer, stream); });
-            });
-        }
-
-        async function initUserProfile() {
-            const userRef = doc(db, DB_COLLECTION, myNick);
-            const snap = await getDoc(userRef);
-            const today3AM = get3AMDateString();
-            
-            const defaultWeekly = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
-            const defaultSlots = { dawn: 0, morning: 0, afternoon: 0, night: 0 };
-
-            if (!snap.exists()) {
-                await setDoc(userRef, { 
-                    id: myNick, nickname: myNick, peerId: myPeerId, goal: '', goalHistory: [],
-                    dailySeconds: 0, totalSeconds: 0, warnings: 0, 
-                    weeklySeconds: defaultWeekly, timeSlots: defaultSlots, pomoTrigger: 0,
-                    lastResetDate: today3AM,
-                    weeklyLogs: { mon: true, tue: true, wed: true, thu: true, fri: false, sat: false, sun: false },
-                    lastActive: serverTimestamp(), isOnline: true, isSharing: false 
-                });
-                lastResetDateStr = today3AM;
-                myWeeklySeconds = defaultWeekly;
-                myTimeSlots = defaultSlots;
-            } else {
-                const data = snap.data();
-                lastResetDateStr = data.lastResetDate || today3AM;
-                myWeeklySeconds = data.weeklySeconds || defaultWeekly;
-                myTimeSlots = data.timeSlots || defaultSlots;
-                if (data.pomoTrigger) lastPomoTriggerTime = data.pomoTrigger;
-                
-                if (lastResetDateStr !== today3AM) {
-                    dailySharedSeconds = 0; 
-                    lastResetDateStr = today3AM;
-                    
-                    // 내 DB가 아직 갱신 안 됐을 때 로컬 뽀모도로(토마토) 초기화 강제
-                    localStorage.setItem('pomo_tomatoes', '0');
-                    localStorage.setItem('pomo_last_date', today3AM);
-                    document.getElementById('tomato-container').innerHTML = '';
-
-                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, dailySeconds: 0, lastResetDate: today3AM, lastActive: serverTimestamp(), pomoTrigger: 0 });
-                } else {
-                    dailySharedSeconds = data.dailySeconds || 0;
-                    totalSharedSeconds = Math.max(data.totalSeconds || 0, dailySharedSeconds);
-                    await updateDoc(userRef, { peerId: myPeerId, isOnline: true, totalSeconds: totalSharedSeconds, lastActive: serverTimestamp() });
-                }
-                
-                if (data.goal) document.getElementById('room-goal-input').value = data.goal;
+        // 새벽 3시 기준 논리적 날짜 계산 (예: 11월 5일 새벽 2시 -> 11월 4일로 인식)
+        function getLogicalDate() {
+            let d = new Date();
+            if(d.getHours() < 3) {
+                d.setDate(d.getDate() - 1);
             }
-            updateProgressUI();
+            return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+        }
+
+        function formatTime(secs) {
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            return `${h}시간 ${m}분`;
+        }
+
+        window.addEventListener('init-app', async (e) => {
+            myNick = e.detail;
             
-            onSnapshot(collection(db, DB_COLLECTION), function(snap) {
-                publicUsers = [];
-                snap.forEach(function(d) {
-                    const data = d.data();
-                    if(data.id) {
-                        publicUsers.push(data);
+            try {
+                const cred = await signInAnonymously(auth);
+                uid = cred.user.uid;
+                
+                const userRef = doc(db, DB_COLLECTION, uid);
+                const snap = await getDoc(userRef);
+                const today = getLogicalDate();
+                
+                if (snap.exists()) {
+                    let data = snap.data();
+                    // 날짜가 바뀌었을 때 리셋 로직 (새벽 3시 지남)
+                    if (data.lastResetDate !== today) {
+                        let currentHearts = data.hearts;
+                        // 전날 2시간 미만 달성 시 하트 차감
+                        if (data.seconds < GOAL_SECONDS) {
+                            currentHearts = Math.max(0, currentHearts - 1);
+                        }
+                        myData = { seconds: 0, tomatoes: 0, hearts: currentHearts, lastResetDate: today };
+                    } else {
+                        myData = { seconds: data.seconds || 0, tomatoes: data.tomatoes || 0, hearts: data.hearts || 3, lastResetDate: data.lastResetDate };
                     }
-                });
-
-                // 내 데이터 동기화 시 날짜 확인 강제
-                const myDataSync = publicUsers.find(u => u.id === myNick);
-                if (myDataSync) {
-                    const current3AM = get3AMDateString();
-                    if (myDataSync.lastResetDate && myDataSync.lastResetDate !== current3AM) {
-                        dailySharedSeconds = 0; // DB가 아직 과거 날짜면 0으로 표시
-                    } else if (myDataSync.dailySeconds !== undefined && !sharingInterval) {
-                        dailySharedSeconds = myDataSync.dailySeconds;
-                    }
-                    if (myDataSync.totalSeconds !== undefined && !sharingInterval) {
-                        totalSharedSeconds = Math.max(myDataSync.totalSeconds, dailySharedSeconds);
-                    }
-                    if (myDataSync.weeklySeconds) myWeeklySeconds = myDataSync.weeklySeconds;
-                    if (myDataSync.timeSlots) myTimeSlots = myDataSync.timeSlots;
-
-                    if (myDataSync.pomoTrigger && myDataSync.pomoTrigger > lastPomoTriggerTime) {
-                        lastPomoTriggerTime = myDataSync.pomoTrigger;
-                        showToast("🍅 다같이 뽀모도로가 시작되었습니다!");
-                        setPomo('work');
-                        if(!isPomoRun) togglePomo();
-                    }
+                } else {
+                    myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: today };
                 }
+                
+                // 내 정보 DB에 기록 및 하트비트(isOnline) 시작
+                await setDoc(userRef, {
+                    nickname: myNick,
+                    seconds: myData.seconds,
+                    tomatoes: myData.tomatoes,
+                    hearts: myData.hearts,
+                    lastResetDate: myData.lastResetDate,
+                    lastActive: serverTimestamp(),
+                    isOnline: true
+                }, { merge: true });
 
-                updateProgressUI();
-                renderOtherUsers();
-                checkAndCallOthers();
-                if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
-                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
-            });
-        }
+                updateUI();
+                startHeartbeat();
+                initWebRTC();
+                listenToOthers();
 
-        function checkAndCallOthers() {
-            if (!myPeerId || !peer) return;
-            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline && u.peerId; });
-            others.forEach(function(u) {
-                if ((u.isSharing || mediaStream) && !currentCalls[u.peerId]) {
-                    const call = mediaStream ? peer.call(u.peerId, mediaStream) : peer.call(u.peerId);
-                    if (call) {
-                        currentCalls[u.peerId] = call;
-                        call.on('stream', function(stream) { addRemoteVideo(call.peer, stream); });
-                    }
-                }
-            });
-        }
-
-        const videoEl = document.getElementById('video-element'), placeholder = document.getElementById('video-placeholder');
-        document.getElementById('blur-toggle').addEventListener('change', function(e) {
-            if (e.target.checked) {
-                videoEl.classList.add('video-blur');
-                document.querySelectorAll('.remote-video').forEach(function(v) { v.classList.add('video-blur'); });
-            } else {
-                videoEl.classList.remove('video-blur');
-                document.querySelectorAll('.remote-video').forEach(function(v) { v.classList.remove('video-blur'); });
+            } catch (err) {
+                console.error("Firebase Auth Error: ", err);
+                alert("로그인에 실패했습니다.");
             }
         });
 
-        window.startStream = async function(type) {
-            if (mediaStream) window.stopStream();
+        // 30초마다 내가 살아있음을 DB에 알림 (오프라인 판별용)
+        function startHeartbeat() {
+            setInterval(() => {
+                if(!uid) return;
+                updateDoc(doc(db, DB_COLLECTION, uid), {
+                    lastActive: serverTimestamp(),
+                    isOnline: true
+                });
+            }, 30000);
+        }
+
+        // 화면 공유 및 작업 시간 측정
+        window.startStream = async (type) => {
             try {
-                mediaStream = await (type === 'cam' ? navigator.mediaDevices.getUserMedia({ video: true }) : navigator.mediaDevices.getDisplayMedia({ video: true }));
-                videoEl.srcObject = mediaStream;
-                videoEl.classList.remove('hidden-safely'); placeholder.classList.add('hidden-safely');
-                document.getElementById('btn-cam').classList.add('hidden-safely'); document.getElementById('btn-screen').classList.add('hidden-safely');
-                document.getElementById('btn-stop').classList.remove('hidden-safely'); document.getElementById('live-indicator').classList.remove('hidden-safely');
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                document.getElementById('video-element').srcObject = mediaStream;
+                document.getElementById('video-element').classList.remove('hidden-safely');
+                document.getElementById('btn-screen').classList.add('hidden-safely');
+                document.getElementById('btn-stop').classList.remove('hidden-safely');
                 
-                mediaStream.getVideoTracks()[0].onended = window.stopStream;
-                startTimeTracking(); showToast(type === 'cam' ? "웹캠 시작" : "화면 공유 시작");
-                if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
-                
-                Object.values(currentCalls).forEach(function(c) { c.close(); });
-                currentCalls = {};
-                checkAndCallOthers();
-            } catch (err) { showToast("권한이 거부되었습니다."); }
-        };
-
-        window.stopStream = function() {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(function(t) { t.stop(); });
-                mediaStream = null;
-            }
-            videoEl.classList.add('hidden-safely'); placeholder.classList.remove('hidden-safely');
-            document.getElementById('btn-cam').classList.remove('hidden-safely'); document.getElementById('btn-screen').classList.remove('hidden-safely');
-            document.getElementById('btn-stop').classList.add('hidden-safely'); document.getElementById('live-indicator').classList.add('hidden-safely');
-            
-            if (myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: false });
-            stopTimeTracking();
-        };
-
-        function renderOtherUsers() {
-            const grid = document.getElementById('other-users-grid');
-            const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
-            const validCardIds = new Set(others.map(function(u) { return makeSafeId(u.id); }));
-            const current3AM = get3AMDateString();
-            
-            others.forEach(function(u) {
-                const safeId = makeSafeId(u.id);
-                let card = document.getElementById(safeId);
-                
-                // ★ 핵심 수정: 다른 유저의 DB가 어제 날짜로 멈춰있다면, 내 화면에서는 0으로 강제 초기화해서 표시 (Virtual Reset)
-                const displayDailySec = (u.lastResetDate && u.lastResetDate !== current3AM) ? 0 : (u.dailySeconds || 0);
-                const h = Math.floor(displayDailySec / 3600), m = Math.floor((displayDailySec % 3600) / 60).toString().padStart(2, '0');
-                
-                if (!card) {
-                    card = document.createElement('div'); card.id = safeId;
-                    card.className = "bg-white rounded-3xl card-shadow border border-gray-100 overflow-hidden relative aspect-[4/3] group flex items-center justify-center";
-                    card.innerHTML = '<div class="ui-layer absolute inset-0 flex flex-col justify-center items-center bg-gray-50 z-10">' +
-                        '<div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-gray-400 font-bold text-3xl mb-4">' + u.id.charAt(0) + '</div>' +
-                        '<p class="text-xl font-bold text-gray-900">' + u.id + '</p>' +
-                        '<p class="text-base text-gray-500 mt-1 goal-text">' + (u.goal || '목표 없음') + '</p></div>' +
-                        '<div class="absolute top-4 left-4 bg-black/60 text-white text-sm px-4 py-2 rounded-full font-bold flex items-center gap-2 z-50">' +
-                        '<span class="w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400') + '"></span>' +
-                        u.id + ' (<span class="time-text">' + h + 'h ' + m + 'm</span>)</div>';
-                    grid.appendChild(card);
-                } else {
-                    card.querySelector('.time-text').textContent = h + 'h ' + m + 'm';
-                    card.querySelector('.goal-text').textContent = u.goal || '목표 없음';
-                    card.querySelector('.status-dot').className = 'w-2 h-2 rounded-full status-dot ' + (u.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400');
+                // 작업 시간 카운트 시작 (1분에 1번씩만 DB 갱신하여 부하 최소화)
+                workInterval = setInterval(() => {
+                    myData.seconds += 1;
+                    updateUI(); // 내 화면은 실시간 1초마다 렌더링
                     
-                    const layer = card.querySelector('.ui-layer');
-                    const vid = card.querySelector('video.remote-video');
-                    if (!u.isSharing) { if (vid) vid.remove(); if (layer) layer.style.display = 'flex'; }
-                }
-            });
+                    if(myData.seconds % 60 === 0) { // DB는 1분마다 저장
+                        updateDoc(doc(db, DB_COLLECTION, uid), { seconds: myData.seconds });
+                    }
+                }, 1000);
 
-            Array.from(grid.children).forEach(function(c) { 
-                if (!validCardIds.has(c.id)) c.remove(); 
-            });
-        }
+                // 화면 공유 중지 시 처리
+                mediaStream.getVideoTracks()[0].onended = () => { window.stopStream(); };
 
-        function addRemoteVideo(incomingId, stream) {
-            if(!stream || stream.getVideoTracks().length === 0) return;
-            const user = publicUsers.find(function(u) { return u.peerId === incomingId; });
-            if(!user || !user.isSharing) return;
-            
-            const card = document.getElementById(makeSafeId(user.id));
-            if(!card) return;
-            const layer = card.querySelector('.ui-layer'); if(layer) layer.style.display = 'none';
-
-            let vid = card.querySelector('video.remote-video');
-            if(!vid) {
-                vid = document.createElement('video');
-                vid.className = 'remote-video absolute inset-0 w-full h-full object-cover z-40 ' + (document.getElementById('blur-toggle').checked ? 'video-blur' : '');
-                vid.autoplay = true; vid.playsinline = true; vid.muted = true;
-                card.appendChild(vid);
+            } catch (e) {
+                console.error(e);
+                alert("화면 공유를 취소했거나 권한이 없습니다.");
             }
-            if(vid.srcObject !== stream) vid.srcObject = stream;
+        };
+
+        window.stopStream = () => {
+            if(mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+            document.getElementById('video-element').classList.add('hidden-safely');
+            document.getElementById('btn-screen').classList.remove('hidden-safely');
+            document.getElementById('btn-stop').classList.add('hidden-safely');
+            clearInterval(workInterval);
+        };
+
+        // 내 화면 UI 업데이트
+        function updateUI() {
+            const timeStr = formatTime(myData.seconds);
+            document.getElementById('my-time-display').innerText = timeStr;
+            document.getElementById('daily-time-display').innerText = timeStr;
+            
+            const pct = Math.min(100, (myData.seconds / GOAL_SECONDS) * 100);
+            document.getElementById('progress-bar').style.width = pct + '%';
+            
+            let heartStr = '';
+            for(let i=0; i<myData.hearts; i++) heartStr += '❤️';
+            document.getElementById('my-hearts').innerText = heartStr || '💔 퇴출 위기';
+
+            let tomatoStr = '';
+            for(let i=0; i<myData.tomatoes; i++) tomatoStr += '🍅';
+            document.getElementById('tomato-container').innerText = tomatoStr;
         }
 
-        function syncTimeToDB() {
-            if (!myNick) return;
-            totalSharedSeconds = Math.max(totalSharedSeconds, dailySharedSeconds);
-            updateDoc(doc(db, DB_COLLECTION, myNick), { 
-                dailySeconds: dailySharedSeconds, 
-                totalSeconds: totalSharedSeconds,
-                weeklySeconds: myWeeklySeconds,
-                timeSlots: myTimeSlots
-            });
-        }
-
-        function startTimeTracking() {
-            if (sharingInterval) return;
-            lastTick = Date.now();
-            sharingInterval = setInterval(function() {
+        // 다른 유저 데이터 구독 및 오프라인 유저 필터링
+        function listenToOthers() {
+            onSnapshot(collection(db, DB_COLLECTION), (snapshot) => {
                 const now = Date.now();
-                const current3AM = get3AMDateString(new Date(now));
+                const logList = document.getElementById('community-list');
+                logList.innerHTML = '';
                 
-                // ★ 타이머 동작 중 새벽 3시가 넘어갔을 때 동시 리셋 처리
-                if (lastResetDateStr && lastResetDateStr !== current3AM) {
-                    dailySharedSeconds = 0;
-                    lastResetDateStr = current3AM;
-                    
-                    localStorage.setItem('pomo_tomatoes', '0');
-                    localStorage.setItem('pomo_last_date', current3AM);
-                    const tomatoContainer = document.getElementById('tomato-container');
-                    if(tomatoContainer) tomatoContainer.innerHTML = '';
-                    
-                    showToast("오전 3시 기준 당일 카운터가 리셋되었습니다.");
-                    
-                    if (myNick) {
-                        updateDoc(doc(db, DB_COLLECTION, myNick), { 
-                            dailySeconds: 0, 
-                            lastResetDate: current3AM 
-                        });
-                    }
-                }
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if(docSnap.id === uid) return;
 
-                const delta = Math.floor((now - lastTick) / 1000);
-                if (delta > 0) {
-                    dailySharedSeconds += delta; 
-                    totalSharedSeconds += delta;
+                    // Heartbeat 로직: 마지막 업데이트가 1분(60000ms) 이상 지났으면 오프라인으로 간주
+                    const lastActiveMs = data.lastActive ? data.lastActive.toMillis() : 0;
+                    const isOffline = (now - lastActiveMs) > 60000;
 
-                    const d = new Date(now);
-                    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-                    const todayDayKey = dayKeys[get3AMDayIndex(d)];
-                    
-                    myWeeklySeconds[todayDayKey] = dailySharedSeconds;
-
-                    const hour = d.getHours();
-                    let slotKey = 'dawn';
-                    if (hour >= 6 && hour < 12) slotKey = 'morning';
-                    else if (hour >= 12 && hour < 18) slotKey = 'afternoon';
-                    else if (hour >= 18) slotKey = 'night';
-                    myTimeSlots[slotKey] += delta;
-
-                    lastTick += delta * 1000; 
-                    updateProgressUI();
-
-                    if (document.getElementById('tab-personal').classList.contains('active')) {
-                        window.renderPersonalTab(true);
+                    if(isOffline) {
+                        // 오프라인 유저의 영상이 남아있다면 DOM에서 삭제
+                        const staleVideo = document.getElementById(`video-box-${docSnap.id}`);
+                        if(staleVideo) staleVideo.remove();
                     }
 
-                    if (dailySharedSeconds % 5 === 0) {
-                        syncTimeToDB();
-                    }
+                    // 로그(현황판)에는 등록된 모든 작가 표시 (단, 오프라인 표기)
+                    const statusDot = isOffline ? 'bg-gray-300' : 'bg-green-500';
+                    const timeTxt = formatTime(data.seconds || 0);
+                    let heartTxt = ''; for(let i=0; i<(data.hearts||0); i++) heartTxt+='❤️';
+                    
+                    logList.innerHTML += `
+                        <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full ${statusDot}"></div>
+                                <span class="font-bold text-lg">${data.nickname}</span>
+                                <span class="text-sm text-gray-500">${heartTxt}</span>
+                            </div>
+                            <div class="font-bold text-gray-900">${timeTxt}</div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // 뽀모도로 타이머 로직 (날짜 바뀌면 리셋 적용됨)
+        let pomoTime = 25 * 60;
+        let pomoTimer = null;
+        document.getElementById('btn-pomo-start').addEventListener('click', () => {
+            if(pomoTimer) return;
+            pomoTimer = setInterval(() => {
+                pomoTime--;
+                const m = String(Math.floor(pomoTime / 60)).padStart(2, '0');
+                const s = String(pomoTime % 60).padStart(2, '0');
+                document.getElementById('pomo-display').innerText = `${m}:${s}`;
+                
+                if(pomoTime <= 0) {
+                    clearInterval(pomoTimer);
+                    pomoTimer = null;
+                    pomoTime = 25 * 60; // 25분 리셋
+                    myData.tomatoes += 1;
+                    updateDoc(doc(db, DB_COLLECTION, uid), { tomatoes: myData.tomatoes });
+                    updateUI();
+                    alert("뽀모도로 완료! 토마토를 획득했습니다.");
                 }
             }, 1000);
-        }
+        });
 
-        function stopTimeTracking() { 
-            if (sharingInterval) clearInterval(sharingInterval); 
-            sharingInterval = null; 
-            syncTimeToDB();
-        }
+        // 브라우저 닫을 때 오프라인 처리 시도
+        window.addEventListener('beforeunload', () => {
+            if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isOnline: false });
+        });
 
-        function updateProgressUI() {
-            const h = Math.floor(dailySharedSeconds / 3600).toString().padStart(2, '0');
-            const m = Math.floor((dailySharedSeconds % 3600) / 60).toString().padStart(2, '0');
-            const s = (dailySharedSeconds % 60).toString().padStart(2, '0');
-            document.querySelectorAll('.daily-time-display').forEach(function(el) { el.textContent = h + ':' + m + ':' + s; });
-            const percent = Math.min((dailySharedSeconds / GOAL_SECONDS) * 100, 100);
-            document.getElementById('progress-bar').style.width = percent + '%'; 
-            document.getElementById('progress-percent').textContent = Math.floor(percent) + '%';
-        }
-
-        document.getElementById('btn-save-goal').onclick = async function() {
-            const newGoal = document.getElementById('room-goal-input').value.trim();
-            if (!myNick || !newGoal) return;
-            
-            const userRef = doc(db, DB_COLLECTION, myNick);
-            const snap = await getDoc(userRef);
-            let history = (snap.exists() && snap.data().goalHistory) ? snap.data().goalHistory : [];
-            
-            const today3AM = get3AMDateString();
-            const currentDayName = dayNamesMap[get3AMDayIndex()];
-            
-            history = history.filter(function(h) { return h.dateStr !== today3AM; });
-            history.unshift({ dateStr: today3AM, day: currentDayName, goal: newGoal, isCompleted: false });
-
-            await updateDoc(userRef, { 
-                goal: newGoal,
-                goalHistory: history 
-            });
-            showToast("오늘의 목표가 수정(저장)되었습니다!");
-            if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
-            if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
-        };
-
-        // ==========================================
-        // 뽀모도로 제어 및 토마토 일별 자동 리셋 (추가)
-        // ==========================================
-        let isGroupPomoMode = false;
-        const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60; 
-        let pomoSec = POMO_WORK, isPomoRun = false, pomoInt = null, pomoMode = 'work';
-        const display = document.getElementById('pomo-display'), fill = document.getElementById('pomo-bg-fill');
-
-        // ★ 핵심 추가: 로컬 스토리지에 저장된 토마토 날짜가 오늘(새벽 3시 이후)이 아니면 지우는 함수
-        function checkAndResetTomatoes() {
-            try {
-                const today3AM = get3AMDateString();
-                const lastTomatoDate = localStorage.getItem('pomo_last_date');
-                if (lastTomatoDate && lastTomatoDate !== today3AM) {
-                    localStorage.setItem('pomo_tomatoes', '0');
-                    localStorage.setItem('pomo_last_date', today3AM);
-                    const container = document.getElementById('tomato-container');
-                    if (container) container.innerHTML = '';
-                } else if (!lastTomatoDate) {
-                    localStorage.setItem('pomo_last_date', today3AM);
-                }
-            } catch(e){}
-        }
-
-        function loadPomoState() {
-            try {
-                checkAndResetTomatoes(); // 앱 시작 시 토마토 날짜 검증
-                const savedSec = localStorage.getItem('pomo_sec');
-                const savedMode = localStorage.getItem('pomo_mode');
-                const savedTomatoes = localStorage.getItem('pomo_tomatoes');
-                
-                if (savedSec !== null) pomoSec = parseInt(savedSec, 10);
-                if (savedMode !== null) pomoMode = savedMode;
-                if (savedTomatoes !== null) {
-                    const count = parseInt(savedTomatoes, 10);
-                    const container = document.getElementById('tomato-container');
-                    container.innerHTML = '';
-                    for (let i = 0; i < count; i++) {
-                        const tomato = document.createElement('span');
-                        tomato.textContent = '🍅';
-                        tomato.className = "tomato-pop inline-block";
-                        container.appendChild(tomato);
+        // 간이 WebRTC 초기화 (실제 영상 P2P 통신용)
+        function initWebRTC() {
+            peer = new Peer(uid);
+            // 다른 사람의 전화(영상)가 오면 받고 빈 비디오 박스에 할당하는 로직
+            peer.on('call', call => {
+                call.answer();
+                call.on('stream', remoteStream => {
+                    let box = document.getElementById(`video-box-${call.peer}`);
+                    if(!box) {
+                        box = document.createElement('div');
+                        box.id = `video-box-${call.peer}`;
+                        box.className = "bg-gray-100 rounded-2xl overflow-hidden relative aspect-video flex items-center justify-center";
+                        box.innerHTML = `
+                            <video id="vid-${call.peer}" class="w-full h-full object-cover video-blur absolute inset-0 z-20" autoplay playsinline></video>
+                            <div class="absolute top-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-30">동료 작가</div>
+                        `;
+                        document.getElementById('video-grid').appendChild(box);
                     }
-                }
-            } catch (e) {}
-            updatePomo();
-        }
-
-        function savePomoState() {
-            try {
-                localStorage.setItem('pomo_sec', pomoSec);
-                localStorage.setItem('pomo_mode', pomoMode);
-                const count = document.getElementById('tomato-container').children.length;
-                localStorage.setItem('pomo_tomatoes', count);
-                localStorage.setItem('pomo_last_date', get3AMDateString()); // 저장할 때 무조건 오늘 날짜 갱신
-            } catch (e) {}
-        }
-        
-        document.getElementById('pomo-type-personal').onclick = function() {
-            isGroupPomoMode = false;
-            this.className = "px-4 py-1 rounded-full text-xs font-bold bg-white text-gray-900 shadow-sm transition-all duration-300";
-            document.getElementById('pomo-type-group').className = "px-4 py-1 rounded-full text-xs font-bold text-gray-400 hover:text-gray-700 transition-all duration-300";
-        };
-        
-        document.getElementById('pomo-type-group').onclick = function() {
-            isGroupPomoMode = true;
-            this.className = "px-4 py-1 rounded-full text-xs font-bold bg-white text-gray-900 shadow-sm transition-all duration-300";
-            document.getElementById('pomo-type-personal').className = "px-4 py-1 rounded-full text-xs font-bold text-gray-400 hover:text-gray-700 transition-all duration-300";
-        };
-
-        document.getElementById('btn-pomo-mute').onclick = function() {
-            isPomoMuted = !isPomoMuted;
-            document.getElementById('pomo-sound-icon').textContent = isPomoMuted ? '🔇' : '🔊';
-            if(!isPomoMuted) pomoAlarmSound.play().catch(function(e){});
-            showToast(isPomoMuted ? "음소거 모드 ON" : "알림음 ON");
-        };
-
-        function setPomo(mode) {
-            if(isPomoRun) togglePomo(); 
-            pomoMode = mode; pomoSec = mode === 'work' ? POMO_WORK : POMO_BREAK;
-            document.getElementById('mode-work').className = mode === 'work' ? 'px-4 py-1.5 rounded-full text-sm font-bold bg-gray-900 text-white shadow-md transition-all' : 'px-4 py-1.5 rounded-full text-sm font-bold text-gray-400 hover:bg-gray-100 transition-all';
-            document.getElementById('mode-break').className = mode === 'break' ? 'px-4 py-1.5 rounded-full text-sm font-bold bg-white shadow-md text-gray-900 transition-all' : 'px-4 py-1.5 rounded-full text-sm font-bold text-gray-400 hover:bg-gray-100 transition-all';
-            updatePomo();
-            savePomoState();
-        }
-
-        function updatePomo() {
-            display.textContent = Math.floor(pomoSec / 60).toString().padStart(2, '0') + ':' + (pomoSec % 60).toString().padStart(2, '0');
-            const total = pomoMode === 'work' ? POMO_WORK : POMO_BREAK; 
-            fill.style.transform = 'scaleY(' + ((total - pomoSec) / total) + ')';
-            fill.className = 'absolute inset-0 origin-bottom transform scale-y-0 transition-transform duration-1000 ease-linear ' + (pomoMode === 'work' ? 'bg-gray-50' : 'bg-green-50/50');
-        }
-
-        function togglePomo() {
-            if (isPomoRun) { 
-                clearInterval(pomoInt); isPomoRun = false; document.getElementById('btn-pomo-start').textContent = "계속하기"; 
-                savePomoState();
-            } else {
-                isPomoRun = true; document.getElementById('btn-pomo-start').textContent = "일시정지";
-                pomoInt = setInterval(function() { 
-                    if (pomoSec > 0) { 
-                        pomoSec--; updatePomo(); 
-                        if (pomoSec % 5 === 0) savePomoState();
-                    } else { 
-                        clearInterval(pomoInt); isPomoRun = false;
-                        if(!isPomoMuted) pomoAlarmSound.play().catch(function(e){});
-
-                        if(pomoMode === 'work') {
-                            showToast("🍅 25분 집중 완료! 고생하셨습니다.");
-                            const tomato = document.createElement('span');
-                            tomato.textContent = '🍅'; tomato.className = "tomato-pop inline-block"; 
-                            document.getElementById('tomato-container').appendChild(tomato);
-                            setPomo('break');
-                        } else {
-                            showToast("✨ 휴식 끝! 다시 집중해볼까요?");
-                            setPomo('work');
-                        }
-                        document.getElementById('btn-pomo-start').textContent = "시작하기"; 
-                        savePomoState();
-                    } 
-                }, 1000);
-            }
-        }
-
-        document.getElementById('mode-work').onclick = function() { setPomo('work'); }; 
-        document.getElementById('mode-break').onclick = function() { setPomo('break'); };
-        document.getElementById('btn-pomo-reset').onclick = function() { setPomo(pomoMode); };
-        
-        document.getElementById('btn-pomo-start').onclick = function() {
-            if(isGroupPomoMode && !isPomoRun) {
-                const listEl = document.getElementById('group-pomo-user-list');
-                const others = publicUsers.filter(function(u) { return u.id !== myNick && u.isOnline; });
-                
-                if (others.length === 0) {
-                    showToast("현재 접속 중인 다른 작가님이 없습니다.");
-                    togglePomo();
-                    return;
-                }
-                
-                listEl.innerHTML = others.map(function(u) {
-                    return '<label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition">' +
-                        '<input type="checkbox" value="' + u.id + '" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 user-invite-cb" checked>' +
-                        '<span class="font-bold text-gray-900 text-sm">' + u.id + '</span></label>';
-                }).join('');
-                
-                document.getElementById('group-pomo-modal').classList.remove('hidden-safely');
-            } else {
-                togglePomo();
-            }
-        };
-
-        window.startGroupPomo = async function() {
-            const checkboxes = document.querySelectorAll('.user-invite-cb:checked');
-            const targetIds = Array.from(checkboxes).map(function(cb) { return cb.value; });
-            
-            document.getElementById('group-pomo-modal').classList.add('hidden-safely');
-            
-            if(targetIds.length === 0) {
-                showToast("초대할 작가님을 선택하지 않았습니다.");
-            } else {
-                showToast("초대장을 보냈습니다! 함께 집중을 시작합니다.");
-                const triggerTime = Date.now();
-                targetIds.forEach(function(id) {
-                    updateDoc(doc(db, DB_COLLECTION, id), { pomoTrigger: triggerTime });
+                    document.getElementById(`vid-${call.peer}`).srcObject = remoteStream;
                 });
-            }
-            
-            setPomo('work');
-            if(!isPomoRun) togglePomo();
-        };
-
-        loadPomoState();
-
-        // ==========================================
-        // Log 탭 렌더링 (새벽 3시 Virtual Reset 기능 포함)
-        // ==========================================
-        window.renderCommunityLog = function() {
-            const todayIdx = get3AMDayIndex();
-            const current3AM = get3AMDateString();
-            const communityListEl = document.getElementById('community-list');
-            const monthlyGridEl = document.getElementById('monthly-author-grid');
-
-            communityListEl.innerHTML = publicUsers.map(function(u) {
-                const warnCount = u.warnings || 0;
-                let heartsHtml = '';
-                for(let i = 0; i < 3; i++) heartsHtml += (i < (3 - warnCount)) ? '❤️ ' : '💔 ';
-                if(warnCount >= 3) heartsHtml = '<span class="text-red-500 font-bold">퇴출 완료</span>';
-
-                // ★ 핵심 수정: 다른 유저의 DB가 어제 날짜로 멈춰있다면, 내 화면(Log탭)에서는 0시간으로 강제 리셋해서 표시
-                const userDailySec = (u.lastResetDate && u.lastResetDate !== current3AM) ? 0 : (u.dailySeconds || 0);
-                
-                const h = Math.floor(userDailySec / 3600);
-                const m = Math.floor((userDailySec % 3600) / 60);
-                const progress = Math.min((userDailySec / GOAL_SECONDS) * 100, 100);
-                
-                const userTotalSec = Math.max(u.totalSeconds || 0, userDailySec);
-                const totalH = Math.floor(userTotalSec / 3600);
-                const totalM = Math.floor((userTotalSec % 3600) / 60);
-
-                const weekDaysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-                let weekHtml = weekDaysOrder.map(function(dayKey, idx) {
-                    let icon = '-';
-                    if (idx <= 3) {
-                        icon = '😊';
-                    } else if (idx < todayIdx) {
-                        const wLogs = u.weeklyLogs || {};
-                        icon = wLogs[dayKey] ? '😊' : '🥲';
-                    } else if (idx === todayIdx) {
-                        icon = (userDailySec >= GOAL_SECONDS) ? '😊' : '-';
-                    } else {
-                        icon = '-';
-                    }
-
-                    return '<div class="flex flex-col items-center">' +
-                        '<span class="text-xs text-gray-400 font-bold mb-1">' + dayNamesMap[idx] + '</span>' +
-                        '<span class="text-2xl">' + icon + '</span>' +
-                        '</div>';
-                }).join('');
-
-                const historyList = u.goalHistory || [];
-                let goalHistoryHtml = historyList.length > 0 ? historyList.map(function(item) {
-                    const tag = item.dateStr ? item.dateStr.slice(-5) : (item.day || '목표');
-                    return '<li class="text-sm text-gray-700 flex items-center gap-2">' +
-                        '<span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">[' + tag + ']</span>' +
-                        '<span class="' + (item.isCompleted ? 'goal-completed' : '') + '">' + item.goal + '</span>' +
-                        '</li>';
-                }).join('') : '<li class="text-sm text-gray-400">아직 저장된 목표 기록이 없습니다.</li>';
-
-                return '<div class="bg-white rounded-3xl p-8 card-shadow border border-gray-100 flex flex-col gap-6 relative overflow-hidden">' +
-                    '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-50 pb-5">' +
-                    '<div class="flex items-center gap-5">' +
-                    '<div class="w-16 h-16 rounded-2xl bg-gray-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">' + u.id.charAt(0) + '</div>' +
-                    '<div><h3 class="font-bold text-2xl text-gray-900">' + u.id + '</h3>' +
-                    '<p class="text-sm text-gray-500 mt-1">오늘의 목표: <span class="text-gray-900 font-bold">' + (u.goal || '목표 미설정') + '</span></p></div>' +
-                    '</div>' +
-                    '<div class="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-center">' +
-                    '<span class="text-sm text-gray-500 font-bold">남은 생명</span>' +
-                    '<div class="text-lg tracking-widest">' + heartsHtml + '</div></div></div>' +
-                    '<div><div class="flex justify-between items-center text-sm font-bold text-gray-600 mb-2">' +
-                    '<span>오늘 작업 (' + h + '시간 ' + m + '분 / 2시간 목표)</span>' +
-                    '<div class="flex items-center gap-2">' +
-                    '<span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">총 누적 ' + totalH + '시간 ' + totalM + '분</span>' +
-                    '<span class="text-gray-900 text-base">' + Math.floor(progress) + '%</span></div></div>' +
-                    '<div class="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">' +
-                    '<div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ' + progress + '%"></div></div></div>' +
-                    '<div class="bg-gray-50/70 rounded-2xl p-5 border border-gray-100">' +
-                    '<span class="text-sm font-bold text-gray-500 block mb-3">주간 7일 마감 현황 (새벽 3시 정산)</span>' +
-                    '<div class="grid grid-cols-7 gap-2 text-center">' + weekHtml + '</div></div>' +
-                    '<div class="bg-indigo-50/30 rounded-2xl p-5 border border-indigo-50/50">' +
-                    '<span class="text-sm font-bold text-indigo-900 block mb-3">📌 최근 집필 목표 기록</span>' +
-                    '<ul class="space-y-2">' + goalHistoryHtml + '</ul></div></div>';
-            }).join('') || '<div class="text-gray-400 py-10 text-center">참여자가 없습니다.</div>';
-
-            const now = new Date();
-            document.getElementById('month-label').textContent = (now.getMonth() + 1) + '월 현황';
-
-            monthlyGridEl.innerHTML = publicUsers.map(function(u) {
-                // 월간 통계 역시 당일 가상 리셋 로직 적용
-                const userDailySec = (u.lastResetDate && u.lastResetDate !== current3AM) ? 0 : (u.dailySeconds || 0);
-                const userTotalSec = Math.max(u.totalSeconds || 0, userDailySec);
-                const totalH = Math.floor(userTotalSec / 3600);
-                const totalM = Math.floor((userTotalSec % 3600) / 60);
-
-                const daysElapsed = Math.max(1, todayIdx + 1);
-                const expectedTargetSec = daysElapsed * GOAL_SECONDS;
-                const avgProgress = Math.min(100, Math.floor((userTotalSec / expectedTargetSec) * 100));
-
-                return '<div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col gap-4">' +
-                    '<div class="flex items-center gap-3 border-b border-gray-200/60 pb-3">' +
-                    '<div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-lg flex items-center justify-center">' + u.id.charAt(0) + '</div>' +
-                    '<span class="font-bold text-lg text-gray-900">' + u.id + ' 작가</span></div>' +
-                    '<div class="space-y-2 text-sm">' +
-                    '<div class="flex justify-between items-center"><span class="text-gray-500 font-medium">총 누적 작업 시간</span><span class="font-bold text-gray-900 text-base">' + totalH + '시간 ' + totalM + '분</span></div>' +
-                    '<div class="flex justify-between items-center"><span class="text-gray-500 font-medium">평균 달성률</span><span class="font-bold text-emerald-600 text-base">' + avgProgress + '%</span></div>' +
-                    '</div></div>';
-            }).join('') || '<div class="text-gray-400 col-span-full py-6 text-center">참여자가 없습니다.</div>';
-        };
-
-        window.toggleGoalCheck = async function(dateStr) {
-            const userRef = doc(db, DB_COLLECTION, myNick);
-            const snap = await getDoc(userRef);
-            if (!snap.exists()) return;
-            
-            let history = snap.data().goalHistory || [];
-            const targetIdx = history.findIndex(function(h) { return h.dateStr === dateStr; });
-            if(targetIdx > -1) {
-                history[targetIdx].isCompleted = !history[targetIdx].isCompleted;
-                await updateDoc(userRef, { goalHistory: history });
-                showToast(history[targetIdx].isCompleted ? "목표 달성을 축하합니다! 🎉" : "목표 달성이 취소되었습니다.");
-                if (document.getElementById('tab-personal').classList.contains('active')) window.renderPersonalTab();
-                if (document.getElementById('tab-community').classList.contains('active')) window.renderCommunityLog();
-            }
-        };
-
-        window.renderPersonalTab = function(useLocalStats) {
-            if(!myNick) return;
-            const myData = publicUsers.find(function(u) { return u.id === myNick; }) || { weeklySeconds: myWeeklySeconds, timeSlots: myTimeSlots, goalHistory: [] };
-            
-            const wSec = useLocalStats ? myWeeklySeconds : (myData.weeklySeconds || myWeeklySeconds);
-            const tSlot = useLocalStats ? myTimeSlots : (myData.timeSlots || myTimeSlots);
-            
-            const totalWeekSec = Object.values(wSec).reduce(function(a, b) { return a + b; }, 0);
-            document.getElementById('ps-total-time').textContent = Math.floor(totalWeekSec/3600) + "시간 " + Math.floor((totalWeekSec%3600)/60) + "분";
-            
-            const currentDayIdx = get3AMDayIndex();
-            const avgSec = Math.floor(totalWeekSec / (currentDayIdx + 1));
-            document.getElementById('ps-avg-time').textContent = Math.floor(avgSec/3600) + "시간 " + Math.floor((avgSec%3600)/60) + "분";
-            if (avgSec >= GOAL_SECONDS) {
-                document.getElementById('ps-avg-msg').textContent = "목표(2시간) 달성 중 ✅"; document.getElementById('ps-avg-msg').className = "text-xs text-emerald-600 font-bold mt-2";
-            } else {
-                document.getElementById('ps-avg-msg').textContent = "매일 꾸준히 해봐요!"; document.getElementById('ps-avg-msg').className = "text-xs text-gray-400 font-bold mt-2";
-            }
-
-            let maxDay = '', maxDaySec = -1;
-            for(let key in wSec) { if(wSec[key] > maxDaySec) { maxDaySec = wSec[key]; maxDay = key; } }
-            const dayKeyNames = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
-            
-            if (maxDaySec > 0) {
-                document.getElementById('ps-best-day').textContent = dayKeyNames[maxDay] + "요일";
-                document.getElementById('ps-best-day-msg').textContent = "누적 " + Math.floor(maxDaySec/3600) + "시간 " + Math.floor((maxDaySec%3600)/60) + "분 작업";
-            } else {
-                document.getElementById('ps-best-day').textContent = "-";
-                document.getElementById('ps-best-day-msg').textContent = "데이터 수집 중";
-            }
-
-            const slotNames = { dawn: '00시 ~ 06시', morning: '06시 ~ 12시', afternoon: '12시 ~ 18시', night: '18시 ~ 24시' };
-            const slotTraits = { dawn: '새벽 고요 집중형', morning: '아침을 여는 상쾌형', afternoon: '오후 에너지 활기형', night: '야간 몰입형 작가' };
-            let maxSlot = '', maxSlotSec = -1;
-            for(let key in tSlot) { if(tSlot[key] > maxSlotSec) { maxSlotSec = tSlot[key]; maxSlot = key; } }
-            
-            if (maxSlotSec > 0) {
-                document.getElementById('ps-golden-time').textContent = slotNames[maxSlot];
-                document.getElementById('ps-golden-msg').textContent = slotTraits[maxSlot] + " 타입";
-                document.getElementById('ps-insight-box').innerHTML = "💡 **Insight:** 작가님은 " + slotNames[maxSlot].split('~')[0].trim() + "대 주변에 몰입도가 가장 높습니다. 이 시간에 중요한 장면을 집필해 보세요!";
-            } else {
-                document.getElementById('ps-golden-time').textContent = "-";
-                document.getElementById('ps-golden-msg').textContent = "데이터 수집 중";
-            }
-
-            const maxExpectedSec = Math.max(5 * 3600, maxDaySec); 
-            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(function(dKey) {
-                const sec = wSec[dKey];
-                const pct = Math.max(5, Math.min((sec / maxExpectedSec) * 100, 100));
-                document.getElementById('ps-text-' + dKey).textContent = (sec/3600).toFixed(1) + "h";
-                document.getElementById('ps-bar-' + dKey).style.height = pct + "%";
-                
-                if(sec === maxDaySec && sec > 0) {
-                    document.getElementById('ps-bar-' + dKey).className = "w-8 bg-indigo-600 rounded-xl transition-all duration-700 shadow-md";
-                    document.getElementById('ps-text-' + dKey).className = "text-xs font-bold text-indigo-600";
-                } else {
-                    document.getElementById('ps-bar-' + dKey).className = "w-8 bg-gray-200 rounded-xl transition-all duration-700";
-                    document.getElementById('ps-text-' + dKey).className = "text-xs font-bold text-gray-500";
-                }
             });
-
-            const totalSlots = Object.values(tSlot).reduce(function(a, b) { return a + b; }, 0) || 1; 
-            ['dawn', 'morning', 'afternoon', 'night'].forEach(function(sKey) {
-                const pct = Math.floor((tSlot[sKey] / totalSlots) * 100);
-                document.getElementById('ps-pct-' + sKey).textContent = pct + "%";
-                document.getElementById('ps-bar-' + sKey).style.width = pct + "%";
-            });
-
-            const historyList = myData.goalHistory || [];
-            if(historyList.length > 0) {
-                document.getElementById('ps-goal-history-list').innerHTML = historyList.slice(0, 6).map(function(item) {
-                    const isDone = item.isCompleted;
-                    const dateTag = item.dateStr ? item.dateStr.slice(-5) : (item.day + '요일');
-                    
-                    return '<div class="p-4 bg-gray-50 rounded-2xl border ' + (isDone ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-100') + ' flex items-start gap-3 transition-colors">' +
-                           '<input type="checkbox" ' + (isDone ? 'checked' : '') + ' onclick="window.toggleGoalCheck(\'' + item.dateStr + '\')" class="mt-1 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer">' +
-                           '<div><span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">' + dateTag + ' 목표</span>' +
-                           '<p class="font-bold mt-2 text-base ' + (isDone ? 'goal-completed' : 'text-gray-900') + '">' + item.goal + '</p></div></div>';
-                }).join('');
-            } else {
-                document.getElementById('ps-goal-history-list').innerHTML = '<div class="col-span-full text-center text-gray-400 py-4">아직 기록된 목표가 없습니다. 오늘의 목표를 저장해보세요!</div>';
-            }
-        };
-
-        window.addEventListener('beforeunload', function() { 
-            if (myNick) {
-                syncTimeToDB();
-                updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false, lastActive: serverTimestamp() }); 
-            }
+        }
+        
+        // 모자이크 토글 기능
+        document.getElementById('blur-toggle').addEventListener('change', (e) => {
+            const vids = document.querySelectorAll('video');
+            if(e.target.checked) vids.forEach(v => v.classList.add('video-blur'));
+            else vids.forEach(v => v.classList.remove('video-blur'));
         });
     </script>
 </body>

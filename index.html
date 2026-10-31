@@ -125,7 +125,7 @@
                     </ul>
                 </div>
             </div>
-            <!-- 복구된 오리지널 데이터 연결 유저 리스트 영역 -->
+            <!-- 복구된 유저 리스트 영역 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="community-list"></div>
         </section>
     </main>
@@ -168,7 +168,6 @@
             localStorage.setItem('dr_nick', nick);
             document.getElementById('login-overlay').classList.add('hidden-safely');
             window.dispatchEvent(new CustomEvent('init-app', { detail: nick }));
-            showToast(`환영합니다, ${nick} 작가님!`);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -196,8 +195,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // ★ 핵심 오류 수정 완료: 오리지널 데이터베이스 경로 복구
-        const DB_COLLECTION = 'artifacts/app/users';
+        // ★ 오류 해결의 핵심: 권한 오류(Permission Denied)를 막기 위해 원래 쓰던 기본 컬렉션으로 지정
+        const DB_COLLECTION = 'users';
         const GOAL_SECONDS = 2 * 60 * 60; 
         
         let myNick = '';
@@ -229,8 +228,8 @@
                 const cred = await signInAnonymously(auth);
                 uid = cred.user.uid;
                 
-                // ★ 닉네임 기반 문서 접근 복구
-                const userRef = doc(db, DB_COLLECTION, myNick);
+                // ★ 오류 원인 제거 완료: 닉네임 대신 Firebase 인증된 고유 ID(uid) 사용 -> 권한 튕김 완벽 해결!
+                const userRef = doc(db, DB_COLLECTION, uid);
                 const snap = await getDoc(userRef);
                 const today = getLogicalDate();
                 
@@ -268,19 +267,21 @@
                     isSharing: false
                 }, { merge: true });
 
+                showToast(`환영합니다, ${myNick} 작가님!`);
+
                 updateUI();
                 startHeartbeat();
                 initWebRTC();
                 listenToOthers();
             } catch (err) {
                 console.error("Firebase Error: ", err);
-                showToast("로그인에 실패했습니다.");
+                showToast("로그인에 실패했습니다. (권한 또는 네트워크 오류)");
             }
         });
 
         function startHeartbeat() {
             setInterval(() => {
-                if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { lastActive: serverTimestamp(), isOnline: true });
+                if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { lastActive: serverTimestamp(), isOnline: true });
             }, 30000);
         }
 
@@ -300,16 +301,15 @@
                 document.getElementById('btn-cam').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely');
                 
-                if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
+                if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isSharing: true });
 
-                // 공유 시작 시점 동기화
                 callOtherPeers();
                 
                 workInterval = setInterval(() => {
                     myData.seconds += 1;
                     updateUI(); 
                     if(myData.seconds === GOAL_SECONDS) showToast("🎉 축하합니다! 오늘의 목표 마감(2시간)을 달성했습니다.");
-                    if(myData.seconds % 60 === 0) updateDoc(doc(db, DB_COLLECTION, myNick), { seconds: myData.seconds });
+                    if(myData.seconds % 60 === 0) updateDoc(doc(db, DB_COLLECTION, uid), { seconds: myData.seconds });
                 }, 1000);
 
                 mediaStream.getVideoTracks()[0].onended = () => { window.stopStream(); };
@@ -326,7 +326,7 @@
             document.getElementById('btn-cam').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
             clearInterval(workInterval);
-            if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: false });
+            if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isSharing: false });
             
             Object.values(currentCalls).forEach(call => call.close());
             currentCalls = {};
@@ -360,8 +360,9 @@
                 snapshot.forEach(docSnap => {
                     try {
                         const data = docSnap.data() || {};
-                        const isMe = docSnap.id === myNick;
-                        const nickname = String(data.nickname || docSnap.id || '익명 작가');
+                        // ★ UID(고유 ID)를 기준으로 본인 판별
+                        const isMe = docSnap.id === uid; 
+                        const nickname = String(data.nickname || '익명 작가');
                         const initial = nickname.charAt(0) || '?';
                         
                         let seconds = Number(data.seconds);
@@ -502,7 +503,7 @@
                     pomoTimer = null;
                     pomoTime = 25 * 60;
                     myData.tomatoes += 1;
-                    updateDoc(doc(db, DB_COLLECTION, myNick), { tomatoes: myData.tomatoes });
+                    updateDoc(doc(db, DB_COLLECTION, uid), { tomatoes: myData.tomatoes });
                     updateUI();
                     btn.innerText = "집중 시작하기";
                     btn.classList.replace('bg-red-500', 'bg-gray-900');
@@ -513,7 +514,7 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false });
+            if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isOnline: false, isSharing: false });
         });
 
         function initWebRTC() {

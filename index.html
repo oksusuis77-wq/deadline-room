@@ -125,7 +125,7 @@
                     </ul>
                 </div>
             </div>
-            <!-- 복구 및 강화된 유저 리스트 영역 -->
+            <!-- 완벽 방어 코드가 적용된 유저 리스트 영역 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="community-list"></div>
         </section>
     </main>
@@ -217,6 +217,9 @@
         }
 
         function formatTime(secs) {
+            // 시간 표시 방어 코드 (음수나 이상한 값이 들어와도 안전하게 처리)
+            secs = Number(secs);
+            if (isNaN(secs) || secs < 0) secs = 0;
             const h = String(Math.floor(secs / 3600)).padStart(2, '0');
             const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
             const s = String(secs % 60).padStart(2, '0');
@@ -238,7 +241,6 @@
                     if (data.lastResetDate !== today) {
                         let currentHearts = data.hearts;
                         let ySuccess = true;
-                        // 전날 2시간 미만 시 실패 기록 및 하트 차감
                         if (data.seconds < GOAL_SECONDS) {
                             currentHearts = Math.max(0, currentHearts - 1);
                             ySuccess = false;
@@ -324,26 +326,42 @@
             const pct = Math.min(100, (myData.seconds / GOAL_SECONDS) * 100);
             document.getElementById('progress-bar').style.width = pct + '%';
             
-            document.getElementById('my-hearts').innerText = '❤️'.repeat(myData.hearts) || '💔 퇴출 위기';
-            document.getElementById('tomato-container').innerText = '🍅'.repeat(myData.tomatoes);
+            // 하트 표시 방어 코드
+            let safeHearts = Number(myData.hearts);
+            if (isNaN(safeHearts) || safeHearts < 0) safeHearts = 0;
+            document.getElementById('my-hearts').innerText = '❤️'.repeat(safeHearts) || '💔 퇴출 위기';
+            
+            let safeTomatoes = Number(myData.tomatoes);
+            if (isNaN(safeTomatoes) || safeTomatoes < 0) safeTomatoes = 0;
+            document.getElementById('tomato-container').innerText = '🍅'.repeat(safeTomatoes);
         }
 
-        // Log 탭 렌더링 로직
+        // 극강의 방어 코드가 적용된 현황판 렌더링 로직
         function listenToOthers() {
             onSnapshot(collection(db, DB_COLLECTION), (snapshot) => {
                 const now = Date.now();
                 const logList = document.getElementById('community-list');
                 const newHTML = [];
                 
+                console.log("현재 연결된 전체 유저 수:", snapshot.size); // 디버깅용
+
                 snapshot.forEach(docSnap => {
                     try {
-                        const data = docSnap.data();
-                        const nickname = data.nickname || '익명 작가';
+                        const data = docSnap.data() || {};
+                        
+                        // 1. 닉네임 방어: 없는 값이거나 이상한 형태일 경우 무조건 문자열로 변환
+                        const nickname = String(data.nickname || '익명 작가');
                         const initial = nickname.charAt(0) || '?';
-                        const seconds = data.seconds || 0;
-                        const hearts = data.hearts ?? 3;
+                        
+                        // 2. 시간 방어: 무조건 양수(숫자)로 변환
+                        let seconds = Number(data.seconds);
+                        if (isNaN(seconds) || seconds < 0) seconds = 0;
 
-                        // 기존 데이터 형식이 달라도 에러가 나지 않도록 매우 안전하게 시간 계산 처리
+                        // 3. 하트(생명) 방어: 음수면 0으로 보정 (RangeError 100% 차단 핵심)
+                        let hearts = Number(data.hearts);
+                        if (isNaN(hearts) || hearts < 0) hearts = 0;
+
+                        // 4. 마지막 접속 시간 방어: 모든 시간 데이터 형태에 완벽하게 대응
                         let lastActiveMs = 0;
                         if (data.lastActive) {
                             if (typeof data.lastActive.toMillis === 'function') {
@@ -352,30 +370,31 @@
                                 lastActiveMs = data.lastActive.seconds * 1000;
                             } else if (typeof data.lastActive === 'number') {
                                 lastActiveMs = data.lastActive;
+                            } else if (typeof data.lastActive === 'string') {
+                                lastActiveMs = new Date(data.lastActive).getTime();
+                            } else if (data.lastActive.toDate && typeof data.lastActive.toDate === 'function') {
+                                lastActiveMs = data.lastActive.toDate().getTime();
                             }
                         }
 
                         const isOffline = (now - lastActiveMs) > 60000;
 
-                        // 오프라인 유저 비디오 삭제 로직
+                        // 오프라인 유저 비디오 삭제
                         if(isOffline && docSnap.id !== uid) {
                             const staleVideo = document.getElementById(`video-box-${docSnap.id}`);
                             if(staleVideo) staleVideo.remove();
                         }
 
-                        // 현황판 카드 구성
+                        // 안전한 텍스트 변환
                         const timeTxt = formatTime(seconds);
-                        let heartTxt = '❤️'.repeat(hearts) || '💔 (0)';
+                        const heartTxt = '❤️'.repeat(hearts) || '💔 (0)';
                         const progressPct = Math.min(100, (seconds / GOAL_SECONDS) * 100);
                         
                         const statusColor = isOffline ? 'bg-gray-300' : 'bg-green-500';
                         const statusText = isOffline ? '오프라인' : '접속 중';
                         const statusTextColor = isOffline ? 'text-gray-400' : 'text-green-500 font-bold';
                         
-                        // 금요일(어제) 내역은 DB의 yesterdaySuccess 값 참조, 나머지는 무조건 😊
                         const fridayFace = (data.yesterdaySuccess ?? true) ? '😊' : '😢';
-                        
-                        // 내 카드인 경우 닉네임 옆에 (나) 표시
                         const displayName = docSnap.id === uid ? `${nickname} <span class="text-indigo-500 text-sm">(나)</span>` : nickname;
 
                         newHTML.push(`
@@ -423,7 +442,7 @@
                             </div>
                         `);
                     } catch (e) {
-                        console.error("현황판 렌더링 중 에러 발생 (스킵됨): ", e);
+                        console.error("이 유저의 데이터가 너무 심각하게 손상되어 건너뜁니다:", e, docSnap.data());
                     }
                 });
                 

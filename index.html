@@ -227,52 +227,81 @@
             
             let seconds = Number(data.seconds) || 0;
             let hearts = data.hearts === undefined ? 3 : Number(data.hearts);
-            let ws = data.weeklyStatus || [null, null, null, null, null, null, null];
+            let ws = Array.isArray(data.weeklyStatus) ? [...data.weeklyStatus] : [null, null, null, null, null, null, null];
             let lastReset = data.lastResetDate;
             let lastWeek = data.weekString || thisWeek;
 
             // [특별 요청] 이번 주 월~목은 무조건 성공(true) 처리
             ws[0] = true; ws[1] = true; ws[2] = true; ws[3] = true;
 
-            if (lastReset && lastReset !== today) {
+            // [버그 보상] 옥수 작가님 하트가 잘못 차감된 경우 복구
+            if (data.nickname === '옥수' && hearts < 3) {
+                hearts = 3;
+            }
+
+            // 주가 바뀐 경우 (월요일 새벽 3시 이후)
+            if (lastWeek !== thisWeek) {
+                let virtualWs = [...ws];
+                
+                // 이전 주의 마지막 접속일 정산
+                if (lastReset) {
+                    let [y, m, d] = lastReset.split('-');
+                    let lastDateObj = new Date(y, m-1, d);
+                    let lastDay = lastDateObj.getDay();
+                    let lastDayIdx = lastDay === 0 ? 6 : lastDay - 1;
+                    
+                    if (seconds >= GOAL_SECONDS) virtualWs[lastDayIdx] = true;
+                    else if (virtualWs[lastDayIdx] === null) virtualWs[lastDayIdx] = false;
+                }
+                
+                // 이전 주의 빈 날짜들을 모두 실패(false) 처리
+                for (let i = 0; i <= 6; i++) {
+                    if (virtualWs[i] === null) virtualWs[i] = false;
+                }
+                
+                // 주간 총계 생명 차감
+                let successCount = virtualWs.filter(v => v === true).length;
+                if (successCount < 5) hearts = Math.max(0, hearts - 1);
+                
+                // 새로운 주 초기화 (월~목은 강제 성공 유지)
+                ws = [true, true, true, true, null, null, null];
+                seconds = 0;
+                lastReset = today;
+                lastWeek = thisWeek;
+            } 
+            // 같은 주에서 날짜만 바뀐 경우
+            else if (lastReset && lastReset !== today) {
                 let [y, m, d] = lastReset.split('-');
                 let lastDateObj = new Date(y, m-1, d);
                 let lastDay = lastDateObj.getDay();
                 let lastDayIdx = lastDay === 0 ? 6 : lastDay - 1;
 
-                if (lastWeek !== thisWeek) {
-                    // 주(Week)가 바뀌었을 때 이전 주 정산
-                    let virtualWs = [...ws];
-                    virtualWs[lastDayIdx] = seconds >= GOAL_SECONDS;
-                    
-                    // 이전 주에도 월~목은 true였다고 간주
-                    virtualWs[0] = true; virtualWs[1] = true; virtualWs[2] = true; virtualWs[3] = true;
-                    
-                    let successCount = virtualWs.filter(v => v === true).length;
-                    if (successCount < 5) hearts = Math.max(0, hearts - 1);
-                    
-                    // 새로운 주 초기화 (월~목 강제 true)
-                    ws = [true, true, true, true, null, null, null];
-                } else {
-                    // 같은 주에서 날짜만 바뀌었을 때
-                    ws[lastDayIdx] = seconds >= GOAL_SECONDS;
-                    
-                    // ⭐️ 접속하지 않고 건너뛴 빈 날짜들은 실패(false)로 자동 처리
-                    for (let i = lastDayIdx + 1; i < todayIdx; i++) {
-                        if (i > 3) ws[i] = false; // 금~일 중에 접속 안 한 날은 false (월~목은 true 유지)
-                    }
+                if (seconds >= GOAL_SECONDS) {
+                    ws[lastDayIdx] = true;
+                } else if (ws[lastDayIdx] === null) {
+                    ws[lastDayIdx] = false;
                 }
-
-                // 날짜가 바뀌었으므로 오늘의 마감 타이머는 0으로 리셋
+                
                 seconds = 0;
                 lastReset = today;
-                lastWeek = thisWeek;
             }
 
-            // 최종적으로 무조건 월~목 강제 보장 한 번 더
+            // ⭐️ 가장 핵심 로직: 오늘(todayIdx) 이전의 빈 날짜들은 접속하지 않았으므로 모두 실패(false) 처리
+            for (let i = 0; i < todayIdx; i++) {
+                if (ws[i] === null) ws[i] = false;
+            }
+
+            // ⭐️ 오늘 당일 로직: 목표 달성시 true, 아니면 빈칸(-) 유지를 위해 null 적용
+            if (seconds >= GOAL_SECONDS) {
+                ws[todayIdx] = true;
+            } else {
+                ws[todayIdx] = null;
+            }
+
+            // 마지막으로 무조건 월~목 강제 보장 덧씌우기
             ws[0] = true; ws[1] = true; ws[2] = true; ws[3] = true;
 
-            return { seconds, hearts, weeklyStatus: ws, lastResetDate: lastReset, weekString: lastWeek };
+            return { seconds, hearts, weeklyStatus: ws, lastResetDate: lastReset || today, weekString: lastWeek };
         }
 
         function formatTime(secs) {
@@ -368,8 +397,16 @@
                 
                 workInterval = setInterval(() => {
                     myData.seconds += 1;
+                    
+                    // 2시간 달성 시 즉시 UI 반영을 위해 weeklyStatus 업데이트
+                    if (myData.seconds === GOAL_SECONDS) {
+                        const { dayIndex: todayIdx } = getLogicalDateInfo();
+                        myData.weeklyStatus[todayIdx] = true;
+                        updateDoc(doc(db, DB_COLLECTION, uid), { weeklyStatus: myData.weeklyStatus });
+                        showToast("🎉 축하합니다! 오늘의 목표 마감(2시간)을 달성했습니다.");
+                    }
+                    
                     updateUI(); 
-                    if(myData.seconds === GOAL_SECONDS) showToast("🎉 축하합니다! 오늘의 목표 마감(2시간)을 달성했습니다.");
                     if(myData.seconds % 60 === 0) updateDoc(doc(db, DB_COLLECTION, uid), { seconds: myData.seconds });
                 }, 1000);
 

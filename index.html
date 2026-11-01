@@ -16,7 +16,8 @@
         
         .tab-content { display: none; opacity: 0; transition: opacity 0.4s ease; }
         .tab-content.active { display: block; opacity: 1; }
-        .video-blur { filter: blur(4px); }
+        /* 프라이버시 강화를 위해 모자이크 강도를 8px로 상향 */
+        .video-blur { filter: blur(8px); }
         .hidden-safely { display: none !important; }
         .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
         
@@ -63,20 +64,20 @@
                             <p class="text-gray-500 text-sm mt-1">서로의 마감을 응원합니다</p>
                         </div>
                         <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex-wrap">
-                            <label class="flex items-center gap-2 cursor-pointer font-bold px-2 text-gray-700">
-                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900" checked> 모자이크
+                            <label class="flex items-center gap-1.5 cursor-pointer text-sm font-bold px-2 text-gray-700">
+                                <input type="checkbox" id="blur-toggle" class="w-4 h-4 rounded text-gray-900" checked> 화면 모자이크 (타인에게도 적용)
                             </label>
                             <div class="w-px h-5 bg-gray-200"></div>
-                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-bold hover:bg-gray-200 transition">웹캠</button>
-                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition">화면공유</button>
-                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 transition">중지</button>
+                            <button id="btn-cam" onclick="window.startStream('cam')" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-bold hover:bg-gray-200 transition text-sm">웹캠</button>
+                            <button id="btn-screen" onclick="window.startStream('screen')" class="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition text-sm">화면공유</button>
+                            <button id="btn-stop" onclick="window.stopStream()" class="hidden-safely px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 transition text-sm">중지</button>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="video-grid">
                         <div class="bg-white card-shadow border border-gray-100 rounded-2xl overflow-hidden relative aspect-[4/3] flex items-center justify-center">
                             <video id="video-element" class="w-full h-full object-cover hidden-safely video-blur absolute inset-0 z-20" autoplay playsinline muted></video>
-                            <div class="z-10 font-bold text-gray-400">대기 중</div>
+                            <div class="z-10 font-bold text-gray-400" id="my-video-status">대기 중</div>
                             <div class="absolute top-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-30 font-bold" id="my-video-label">나 (00:00:00)</div>
                         </div>
                     </div>
@@ -206,9 +207,18 @@
         
         let outgoingCalls = {}; 
         let incomingCalls = {}; 
-
         let peerDataMap = {};
         let isPeerReady = false; 
+
+        // ⭐️ 내 모자이크 체크 상태를 로컬 비디오와 DB에 반영
+        document.getElementById('blur-toggle').addEventListener('change', (e) => {
+            const isBlurred = e.target.checked;
+            const myVid = document.getElementById('video-element');
+            if(isBlurred) myVid.classList.add('video-blur');
+            else myVid.classList.remove('video-blur');
+            
+            if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isBlurred: isBlurred });
+        });
 
         function getLogicalDateInfo() {
             let d = new Date();
@@ -292,6 +302,9 @@
                 const logicalDateInfo = getLogicalDateInfo();
                 const { dateString: today, weekString: thisWeek } = logicalDateInfo;
                 
+                // 내 모자이크 세팅값 초기화
+                const isMyBlurOn = document.getElementById('blur-toggle').checked;
+
                 if (snap.exists()) {
                     const synced = syncDataToToday(snap.data(), logicalDateInfo);
                     myData = { 
@@ -308,7 +321,8 @@
                 await setDoc(userRef, {
                     nickname: myNick, peerId: uid, seconds: myData.seconds, tomatoes: myData.tomatoes,
                     hearts: myData.hearts, lastResetDate: myData.lastResetDate, weekString: myData.weekString,
-                    weeklyStatus: myData.weeklyStatus, lastActive: serverTimestamp(), isOnline: true, isSharing: false
+                    weeklyStatus: myData.weeklyStatus, lastActive: serverTimestamp(), isOnline: true, isSharing: false,
+                    isBlurred: isMyBlurOn // DB에 내 모자이크 상태 등록
                 }, { merge: true });
 
                 showToast(`환영합니다, ${myNick} 작가님!`);
@@ -339,12 +353,15 @@
                 
                 document.getElementById('video-element').srcObject = mediaStream;
                 document.getElementById('video-element').classList.remove('hidden-safely');
+                document.getElementById('my-video-status').classList.add('hidden-safely');
                 document.getElementById('btn-screen').classList.add('hidden-safely');
                 document.getElementById('btn-cam').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely');
                 
                 if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isSharing: true });
 
+                Object.values(outgoingCalls).forEach(call => call.close());
+                outgoingCalls = {};
                 callOtherPeers();
                 
                 workInterval = setInterval(() => {
@@ -369,6 +386,7 @@
             if(mediaStream) mediaStream.getTracks().forEach(track => track.stop());
             mediaStream = null;
             document.getElementById('video-element').classList.add('hidden-safely');
+            document.getElementById('my-video-status').classList.remove('hidden-safely');
             document.getElementById('btn-screen').classList.remove('hidden-safely');
             document.getElementById('btn-cam').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
@@ -394,6 +412,44 @@
             let safeTomatoes = Number(myData.tomatoes);
             if (isNaN(safeTomatoes) || safeTomatoes < 0) safeTomatoes = 0;
             document.getElementById('tomato-container').innerText = '🍅'.repeat(safeTomatoes);
+        }
+
+        // ⭐️ 상대방의 모자이크 설정(isBlurred)에 따라 박스 렌더링
+        function renderVideoBox(peerId, nickname, timeStr, isSharing, isBlurred) {
+            let box = document.getElementById(`video-box-${peerId}`);
+            const blurClass = isBlurred ? 'video-blur' : '';
+
+            if (!box) {
+                box = document.createElement('div');
+                box.id = `video-box-${peerId}`;
+                box.className = "bg-white card-shadow border border-gray-100 rounded-2xl overflow-hidden relative aspect-[4/3] flex items-center justify-center";
+                box.innerHTML = `
+                    <video id="vid-${peerId}" class="w-full h-full object-cover remote-video ${blurClass} absolute inset-0 z-20 hidden-safely" autoplay playsinline muted></video>
+                    <div class="z-10 font-bold text-gray-400" id="status-${peerId}">대기 중</div>
+                    <div class="absolute top-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-30 font-bold" id="label-${peerId}">${nickname} (${timeStr})</div>
+                `;
+                document.getElementById('video-grid').appendChild(box);
+            } else {
+                document.getElementById(`label-${peerId}`).innerText = `${nickname} (${timeStr})`;
+                // 접속 중에 상대방이 모자이크 설정을 바꿨을 때 즉시 반영
+                const vid = document.getElementById(`vid-${peerId}`);
+                if (vid) {
+                    if (isBlurred) vid.classList.add('video-blur');
+                    else vid.classList.remove('video-blur');
+                }
+            }
+
+            const vid = document.getElementById(`vid-${peerId}`);
+            const status = document.getElementById(`status-${peerId}`);
+            
+            if (isSharing) {
+                status.innerText = "연결 중...";
+            } else {
+                vid.classList.add('hidden-safely');
+                status.classList.remove('hidden-safely');
+                status.innerText = "대기 중";
+                vid.srcObject = null;
+            }
         }
 
         function removeRemoteVideoUI(peerId) {
@@ -432,25 +488,18 @@
                         const hearts = synced.hearts;
                         const ws = synced.weeklyStatus;
                         
-                        // 🛡️ 백그라운드 탭 스로틀링 유예 시간 적용 (60,000ms -> 120,000ms)
                         const isOffline = (now - data._activeMs) > 120000;
                         const timeTxt = formatTime(seconds);
+                        
+                        // 상대방이 설정한 모자이크 상태 (값이 없으면 기본적으로 켜져 있도록 처리)
+                        const isBlurred = data.isBlurred !== false; 
 
-                        peerDataMap[data.peerId] = { nickname: nickname, timeStr: timeTxt };
+                        peerDataMap[data.peerId] = { nickname: nickname, timeStr: timeTxt, isBlurred: isBlurred };
 
                         if (!isMe && data.peerId) {
                             if (!isOffline) {
                                 onlinePeers.push(data.peerId);
-                                if (data.isSharing) {
-                                    const label = document.getElementById(`label-${data.peerId}`);
-                                    if (label) label.innerText = `${nickname} (${timeTxt})`;
-                                } else {
-                                    removeRemoteVideoUI(data.peerId);
-                                    if (incomingCalls[data.peerId]) {
-                                        incomingCalls[data.peerId].close();
-                                        delete incomingCalls[data.peerId];
-                                    }
-                                }
+                                renderVideoBox(data.peerId, nickname, timeTxt, data.isSharing, isBlurred);
                             } else {
                                 removeRemoteVideoUI(data.peerId);
                                 if (incomingCalls[data.peerId]) { incomingCalls[data.peerId].close(); delete incomingCalls[data.peerId]; }
@@ -579,22 +628,36 @@
             });
 
             peer.on('call', call => {
-                call.answer(); 
+                if (mediaStream) {
+                    call.answer(mediaStream);
+                } else {
+                    call.answer(); 
+                }
+                
                 incomingCalls[call.peer] = call;
                 
                 call.on('stream', remoteStream => attachRemoteVideo(call.peer, remoteStream));
-                call.on('close', () => removeRemoteVideoUI(call.peer));
-                call.on('error', () => removeRemoteVideoUI(call.peer));
+                
+                call.on('close', () => {
+                    const vid = document.getElementById(`vid-${call.peer}`);
+                    if(vid) vid.srcObject = null;
+                });
+                call.on('error', () => {
+                    const vid = document.getElementById(`vid-${call.peer}`);
+                    if(vid) vid.srcObject = null;
+                });
             });
         }
         
         function callOtherPeers() {
-            if (!isPeerReady || !mediaStream) return;
+            if (!isPeerReady) return;
             onlinePeers.forEach(peerId => {
-                if (!outgoingCalls[peerId]) {
+                if (mediaStream && !outgoingCalls[peerId]) {
                     const call = peer.call(peerId, mediaStream); 
                     if (call) {
                         outgoingCalls[peerId] = call;
+                        // 🛡️ 핵심 버그 픽스: 발신자도 상대방의 응답(Stream)을 받아서 즉시 화면에 띄울 수 있도록 추가
+                        call.on('stream', remoteStream => attachRemoteVideo(peerId, remoteStream));
                         call.on('close', () => { delete outgoingCalls[peerId]; });
                         call.on('error', () => { delete outgoingCalls[peerId]; });
                     }
@@ -603,34 +666,20 @@
         }
 
         function attachRemoteVideo(peerId, remoteStream) {
-            let box = document.getElementById(`video-box-${peerId}`);
-            const isBlurOn = document.getElementById('blur-toggle').checked;
-            const blurClass = isBlurOn ? 'video-blur' : '';
-
-            if(!box) {
-                box = document.createElement('div');
-                box.id = `video-box-${peerId}`;
-                box.className = "bg-white card-shadow border border-gray-100 rounded-2xl overflow-hidden relative aspect-[4/3] flex items-center justify-center";
-                box.innerHTML = `
-                    <video id="vid-${peerId}" class="w-full h-full object-cover ${blurClass} absolute inset-0 z-20" autoplay playsinline muted></video>
-                    <div class="absolute top-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-30 font-bold" id="label-${peerId}">대기 중...</div>
-                `;
-                document.getElementById('video-grid').appendChild(box);
-            }
-            const vid = document.getElementById(`vid-${peerId}`);
-            if (vid.srcObject !== remoteStream) vid.srcObject = remoteStream;
-
             if (peerDataMap[peerId]) {
                 const pd = peerDataMap[peerId];
-                document.getElementById(`label-${peerId}`).innerText = `${pd.nickname} (${pd.timeStr})`;
+                renderVideoBox(peerId, pd.nickname, pd.timeStr, true, pd.isBlurred);
+            }
+            
+            const vid = document.getElementById(`vid-${peerId}`);
+            const status = document.getElementById(`status-${peerId}`);
+            
+            if (vid) {
+                if (vid.srcObject !== remoteStream) vid.srcObject = remoteStream;
+                vid.classList.remove('hidden-safely');
+                status.classList.add('hidden-safely');
             }
         }
-        
-        document.getElementById('blur-toggle').addEventListener('change', (e) => {
-            const vids = document.querySelectorAll('video');
-            if(e.target.checked) vids.forEach(v => v.classList.add('video-blur'));
-            else vids.forEach(v => v.classList.remove('video-blur'));
-        });
     </script>
 </body>
 </html>

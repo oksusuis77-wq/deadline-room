@@ -121,7 +121,7 @@
                     </h4>
                     <ul class="space-y-2 text-sm">
                         <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 하루 2시간 이상 작업 필수</li>
-                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5회 이상 2시간 작업 미달성 시 하트가 하나씩 차감 (매일 새벽 3시 갱신)</li>
+                        <li class="flex items-start gap-2"><span class="text-gray-400">•</span> 주 5회 이상 2시간 작업 미달성 시 하트가 하나씩 차감 (매주 리셋 갱신)</li>
                     </ul>
                 </div>
             </div>
@@ -182,7 +182,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCgNwW2-sWbwW_t3ql8Zkg4osAvR294_x4", 
@@ -198,17 +198,73 @@
         const GOAL_SECONDS = 2 * 60 * 60; 
         
         let myNick = '';
-        let uid = '';
-        let myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: '', yesterdaySuccess: true };
+        let uid = ''; 
+        let myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: '', weekString: '', weeklyStatus: [] };
         let workInterval = null;
         let peer = null;
         let mediaStream = null;
         let currentCalls = {};
 
-        function getLogicalDate() {
+        // 논리적 날짜(새벽 3시 기준) 및 주간(월요일 기준) 계산
+        function getLogicalDateInfo() {
             let d = new Date();
             if(d.getHours() < 3) d.setDate(d.getDate() - 1);
-            return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+            
+            const dateString = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+            
+            let day = d.getDay(); 
+            let dayIndex = day === 0 ? 6 : day - 1; // 0:월 ~ 6:일
+            
+            let monday = new Date(d);
+            monday.setDate(d.getDate() - dayIndex);
+            const weekString = monday.getFullYear() + '-' + String(monday.getMonth()+1).padStart(2,'0') + '-' + String(monday.getDate()).padStart(2,'0');
+            
+            return { dateString, weekString, dayIndex };
+        }
+
+        // 전체 유저 오프라인 리셋 처리 (사이트 접속한 누군가가 대신 업데이트 해주는 크론 역할)
+        async function processDailyResetForEveryone() {
+            const { dateString: today, weekString: thisWeek } = getLogicalDateInfo();
+            const snapshot = await getDocs(collection(db, DB_COLLECTION));
+            
+            const updates = [];
+            snapshot.forEach((docSnap) => {
+                let data = docSnap.data();
+                if (data.lastResetDate && data.lastResetDate !== today) {
+                    let newHearts = data.hearts ?? 3;
+                    let newWeeklyStatus = data.weeklyStatus || [null, null, null, null, null, null, null];
+                    let oldWeekString = data.weekString || thisWeek;
+                    
+                    // 과거 마지막 기록일의 결과 저장 (성공 여부)
+                    let [y, m, d] = data.lastResetDate.split('-');
+                    let lastDateObj = new Date(y, m-1, d);
+                    let lastDay = lastDateObj.getDay();
+                    let lastDayIdx = lastDay === 0 ? 6 : lastDay - 1;
+                    
+                    newWeeklyStatus[lastDayIdx] = (data.seconds || 0) >= GOAL_SECONDS;
+
+                    // 주(Week)가 바뀌었는지 체크하여 주간 성공 횟수 미달 시 생명 차감
+                    if (oldWeekString !== thisWeek) {
+                        let successCount = newWeeklyStatus.filter(v => v === true).length;
+                        if (successCount < 5) {
+                            newHearts = Math.max(0, newHearts - 1);
+                        }
+                        // 새 주간 배열로 초기화
+                        newWeeklyStatus = [null, null, null, null, null, null, null];
+                        oldWeekString = thisWeek;
+                    }
+
+                    updates.push(updateDoc(doc(db, DB_COLLECTION, docSnap.id), {
+                        seconds: 0,
+                        tomatoes: 0, // 뽀모도로 토마토도 하루 지나면 리셋
+                        lastResetDate: today,
+                        weekString: oldWeekString,
+                        weeklyStatus: newWeeklyStatus,
+                        hearts: newHearts
+                    }));
+                }
+            });
+            await Promise.all(updates);
         }
 
         function formatTime(secs) {
@@ -224,41 +280,40 @@
             myNick = e.detail;
             try {
                 const cred = await signInAnonymously(auth);
-                uid = cred.user.uid;
+                uid = cred.user.uid; // WebRTC Peer 식별용으로만 유지
                 
-                const userRef = doc(db, DB_COLLECTION, uid);
+                // 1. 전체 유저 대상 날짜 지난 데이터 리셋 (홍시 누적 문제 및 백그라운드 카운팅 해결)
+                await processDailyResetForEveryone();
+                
+                // 2. 고유 ID를 기기가 아닌 '닉네임' 자체로 고정 (옥수 중복 문제 해결)
+                const userRef = doc(db, DB_COLLECTION, myNick);
                 const snap = await getDoc(userRef);
-                const today = getLogicalDate();
+                const { dateString: today, weekString: thisWeek } = getLogicalDateInfo();
                 
                 if (snap.exists()) {
                     let data = snap.data();
-                    if (data.lastResetDate !== today) {
-                        let currentHearts = data.hearts;
-                        let ySuccess = true;
-                        if (data.seconds < GOAL_SECONDS) {
-                            currentHearts = Math.max(0, currentHearts - 1);
-                            ySuccess = false;
-                        }
-                        myData = { seconds: 0, tomatoes: 0, hearts: currentHearts, lastResetDate: today, yesterdaySuccess: ySuccess };
-                    } else {
-                        myData = { 
-                            seconds: data.seconds || 0, tomatoes: data.tomatoes || 0, 
-                            hearts: data.hearts || 3, lastResetDate: data.lastResetDate, 
-                            yesterdaySuccess: data.yesterdaySuccess ?? true 
-                        };
-                    }
+                    myData = { 
+                        seconds: data.seconds || 0, tomatoes: data.tomatoes || 0, 
+                        hearts: data.hearts ?? 3, lastResetDate: data.lastResetDate,
+                        weekString: data.weekString, weeklyStatus: data.weeklyStatus || [null,null,null,null,null,null,null]
+                    };
                 } else {
-                    myData = { seconds: 0, tomatoes: 0, hearts: 3, lastResetDate: today, yesterdaySuccess: true };
+                    myData = { 
+                        seconds: 0, tomatoes: 0, hearts: 3, 
+                        lastResetDate: today, weekString: thisWeek, 
+                        weeklyStatus: [null, null, null, null, null, null, null] 
+                    };
                 }
                 
                 await setDoc(userRef, {
                     nickname: myNick, 
-                    peerId: uid,
+                    peerId: uid, // 현재 기기의 커넥션 ID 업데이트
                     seconds: myData.seconds, 
                     tomatoes: myData.tomatoes,
                     hearts: myData.hearts, 
                     lastResetDate: myData.lastResetDate, 
-                    yesterdaySuccess: myData.yesterdaySuccess,
+                    weekString: myData.weekString,
+                    weeklyStatus: myData.weeklyStatus,
                     lastActive: serverTimestamp(), 
                     isOnline: true,
                     isSharing: false
@@ -278,7 +333,7 @@
 
         function startHeartbeat() {
             setInterval(() => {
-                if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { lastActive: serverTimestamp(), isOnline: true });
+                if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { lastActive: serverTimestamp(), isOnline: true });
             }, 30000);
         }
 
@@ -298,7 +353,7 @@
                 document.getElementById('btn-cam').classList.add('hidden-safely');
                 document.getElementById('btn-stop').classList.remove('hidden-safely');
                 
-                if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isSharing: true });
+                if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: true });
 
                 callOtherPeers();
                 
@@ -306,7 +361,7 @@
                     myData.seconds += 1;
                     updateUI(); 
                     if(myData.seconds === GOAL_SECONDS) showToast("🎉 축하합니다! 오늘의 목표 마감(2시간)을 달성했습니다.");
-                    if(myData.seconds % 60 === 0) updateDoc(doc(db, DB_COLLECTION, uid), { seconds: myData.seconds });
+                    if(myData.seconds % 60 === 0) updateDoc(doc(db, DB_COLLECTION, myNick), { seconds: myData.seconds });
                 }, 1000);
 
                 mediaStream.getVideoTracks()[0].onended = () => { window.stopStream(); };
@@ -323,7 +378,7 @@
             document.getElementById('btn-cam').classList.remove('hidden-safely');
             document.getElementById('btn-stop').classList.add('hidden-safely');
             clearInterval(workInterval);
-            if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isSharing: false });
+            if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isSharing: false });
             
             Object.values(currentCalls).forEach(call => call.close());
             currentCalls = {};
@@ -357,14 +412,13 @@
                 snapshot.forEach(docSnap => {
                     try {
                         const data = docSnap.data() || {};
-                        const isMe = docSnap.id === uid; 
+                        const isMe = docSnap.id === myNick; 
                         const nickname = String(data.nickname || '익명 작가');
                         const initial = nickname.charAt(0) || '?';
                         
                         let seconds = Number(data.seconds);
                         if (isNaN(seconds) || seconds < 0) seconds = 0;
 
-                        // ★ 데이터에 하트 기록이 없으면 기본값 3을 주도록 수정된 부분
                         let hearts = data.hearts === undefined ? 3 : Number(data.hearts);
                         if (isNaN(hearts) || hearts < 0) hearts = 0;
 
@@ -394,7 +448,17 @@
                         const statusText = isOffline ? '오프라인' : '접속 중';
                         const statusTextColor = isOffline ? 'text-gray-400' : 'text-green-500 font-bold';
                         
-                        const fridayFace = (data.yesterdaySuccess ?? true) ? '😊' : '😢';
+                        // 주간 기록 UI 렌더링
+                        const ws = data.weeklyStatus || [null, null, null, null, null, null, null];
+                        const days = ['월', '화', '수', '목', '금', '토', '일'];
+                        let facesHTML = days.map((d, i) => {
+                            let face = '-';
+                            let color = 'text-gray-300';
+                            if (ws[i] === true) { face = '😊'; color = ''; }
+                            else if (ws[i] === false) { face = '😢'; color = ''; }
+                            return `<div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">${d}</span><span class="text-lg leading-none ${color}">${face}</span></div>`;
+                        }).join('');
+
                         const displayName = isMe ? `${nickname} <span class="text-indigo-500 text-sm">(나)</span>` : nickname;
 
                         newHTML.push(`
@@ -429,13 +493,7 @@
                                     <div class="flex justify-between items-center bg-gray-50 p-4 rounded-xl text-sm border border-gray-100">
                                         <span class="font-bold text-gray-600">이번 주 달성 기록</span>
                                         <div class="flex gap-4 text-center">
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">월</span><span class="text-lg leading-none">😊</span></div>
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">화</span><span class="text-lg leading-none">😊</span></div>
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">수</span><span class="text-lg leading-none">😊</span></div>
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">목</span><span class="text-lg leading-none">😊</span></div>
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">금</span><span class="text-lg leading-none">${fridayFace}</span></div>
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">토</span><span class="text-lg leading-none text-gray-300">-</span></div>
-                                            <div class="flex flex-col items-center gap-1.5"><span class="text-xs font-bold text-gray-400">일</span><span class="text-lg leading-none text-gray-300">-</span></div>
+                                            ${facesHTML}
                                         </div>
                                     </div>
                                 </div>
@@ -500,7 +558,7 @@
                     pomoTimer = null;
                     pomoTime = 25 * 60;
                     myData.tomatoes += 1;
-                    updateDoc(doc(db, DB_COLLECTION, uid), { tomatoes: myData.tomatoes });
+                    updateDoc(doc(db, DB_COLLECTION, myNick), { tomatoes: myData.tomatoes });
                     updateUI();
                     btn.innerText = "집중 시작하기";
                     btn.classList.replace('bg-red-500', 'bg-gray-900');
@@ -511,7 +569,7 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            if(uid) updateDoc(doc(db, DB_COLLECTION, uid), { isOnline: false, isSharing: false });
+            if(myNick) updateDoc(doc(db, DB_COLLECTION, myNick), { isOnline: false, isSharing: false });
         });
 
         function initWebRTC() {

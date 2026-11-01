@@ -231,12 +231,12 @@
             let lastReset = data.lastResetDate;
             let lastWeek = data.weekString || thisWeek;
 
-            // [특별 요청] 이번 주 월~목은 무조건 성공(true) 처리
-            ws[0] = true; ws[1] = true; ws[2] = true; ws[3] = true;
+            // ⭐️ 다음 주부터 정상 작동을 위해 '이번 주(2026-10-26 주간)'에만 에러 보정 적용
+            const isThisBugFixWeek = (thisWeek === '2026-10-26' && lastWeek === '2026-10-26');
 
-            // [버그 보상] 옥수 작가님 하트가 잘못 차감된 경우 복구
-            if (data.nickname === '옥수' && hearts < 3) {
-                hearts = 3;
+            if (isThisBugFixWeek) {
+                ws[0] = true; ws[1] = true; ws[2] = true; ws[3] = true;
+                if (data.nickname === '옥수' && hearts < 3) hearts = 3;
             }
 
             // 주가 바뀐 경우 (월요일 새벽 3시 이후)
@@ -263,8 +263,8 @@
                 let successCount = virtualWs.filter(v => v === true).length;
                 if (successCount < 5) hearts = Math.max(0, hearts - 1);
                 
-                // 새로운 주 초기화 (월~목은 강제 성공 유지)
-                ws = [true, true, true, true, null, null, null];
+                // ✨ 새로운 주 초기화 (다음 주부터는 강제 성공 없이 전부 빈칸으로 시작)
+                ws = [null, null, null, null, null, null, null];
                 seconds = 0;
                 lastReset = today;
                 lastWeek = thisWeek;
@@ -286,20 +286,22 @@
                 lastReset = today;
             }
 
-            // ⭐️ 가장 핵심 로직: 오늘(todayIdx) 이전의 빈 날짜들은 접속하지 않았으므로 모두 실패(false) 처리
+            // 오늘(todayIdx) 이전의 빈 날짜들은 접속하지 않았으므로 모두 실패(false) 처리
             for (let i = 0; i < todayIdx; i++) {
                 if (ws[i] === null) ws[i] = false;
             }
 
-            // ⭐️ 오늘 당일 로직: 목표 달성시 true, 아니면 빈칸(-) 유지를 위해 null 적용
+            // 오늘 당일 로직: 목표 달성시 true, 아니면 빈칸(-) 유지를 위해 null 적용
             if (seconds >= GOAL_SECONDS) {
                 ws[todayIdx] = true;
             } else {
                 ws[todayIdx] = null;
             }
 
-            // 마지막으로 무조건 월~목 강제 보장 덧씌우기
-            ws[0] = true; ws[1] = true; ws[2] = true; ws[3] = true;
+            // 이번 주에 한해서만 다시 덮어쓰기 보장
+            if (isThisBugFixWeek) {
+                ws[0] = true; ws[1] = true; ws[2] = true; ws[3] = true;
+            }
 
             return { seconds, hearts, weeklyStatus: ws, lastResetDate: lastReset || today, weekString: lastWeek };
         }
@@ -325,7 +327,6 @@
                 const { dateString: today, weekString: thisWeek } = logicalDateInfo;
                 
                 if (snap.exists()) {
-                    // 기존 데이터를 오늘 날짜 기준으로 정산 연산 수행
                     const synced = syncDataToToday(snap.data(), logicalDateInfo);
                     myData = { 
                         seconds: synced.seconds, 
@@ -339,7 +340,7 @@
                     myData = { 
                         seconds: 0, tomatoes: 0, hearts: 3, 
                         lastResetDate: today, weekString: thisWeek, 
-                        weeklyStatus: [true, true, true, true, null, null, null] // 월~목 true
+                        weeklyStatus: (thisWeek === '2026-10-26') ? [true, true, true, true, null, null, null] : [null, null, null, null, null, null, null]
                     };
                 }
                 
@@ -398,7 +399,6 @@
                 workInterval = setInterval(() => {
                     myData.seconds += 1;
                     
-                    // 2시간 달성 시 즉시 UI 반영을 위해 weeklyStatus 업데이트
                     if (myData.seconds === GOAL_SECONDS) {
                         const { dayIndex: todayIdx } = getLogicalDateInfo();
                         myData.weeklyStatus[todayIdx] = true;
@@ -460,7 +460,6 @@
                     const data = docSnap.data() || {};
                     const nick = data.nickname || '익명 작가';
                     
-                    // 익명 작가 데이터 강제 제외
                     if (nick === '익명 작가') return;
                     
                     const activeMs = data.lastActive ? (data.lastActive.toMillis ? data.lastActive.toMillis() : (data.lastActive.seconds ? data.lastActive.seconds * 1000 : data.lastActive)) : 0;
@@ -477,7 +476,6 @@
                         const nickname = String(data.nickname);
                         const initial = nickname.charAt(0);
                         
-                        // 화면 렌더링용으로 타 유저 데이터 정산 시뮬레이션
                         const synced = syncDataToToday(data, logicalDateInfo);
                         const seconds = synced.seconds;
                         const hearts = synced.hearts;
